@@ -53,9 +53,9 @@ export default function Page() {
             <Image
               src="/images/divine-seal.png"
               alt="Selo DIVINE Curadoria Nupcial"
-              width={44}
-              height={44}
-              className="h-9 w-9 object-contain md:h-11 md:w-11"
+              width={66}
+              height={66}
+              className="h-14 w-14 object-contain md:h-16 md:w-16"
             />
             <span className="font-serif text-2xl font-light tracking-[0.35em] text-foreground md:text-3xl">
               DIVINE
@@ -194,9 +194,9 @@ export default function Page() {
                 <Image
                   src="/images/divine-seal.png"
                   alt="Selo DIVINE Curadoria Nupcial"
-                  width={64}
-                  height={64}
-                  className="h-14 w-14 object-contain md:h-16 md:w-16"
+                  width={96}
+                  height={96}
+                  className="h-20 w-20 object-contain md:h-24 md:w-24"
                 />
                 <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
                   DIVINE

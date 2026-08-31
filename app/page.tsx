@@ -284,8 +284,7 @@ export default function Page() {
                   Curadoria Nupcial · Centro-Oeste Mineiro
                 </p>
                 <h1 className="text-balance font-serif text-6xl font-light leading-[0.98] tracking-tight text-alabastro drop-shadow-lg lg:text-7xl xl:text-8xl">
-                  A curadoria definitiva para o seu{" "}
-                  <span className="italic text-bronze">casamento</span>.
+                  Simplesmente <span className="italic text-bronze">impecável</span>.
                 </h1>
               </motion.div>
             </div>
@@ -298,8 +297,7 @@ export default function Page() {
             Curadoria Nupcial · Centro-Oeste Mineiro
           </p>
           <h1 className="text-balance font-serif text-5xl font-light leading-[0.98] tracking-tight text-onix">
-            A curadoria definitiva para o seu{" "}
-            <span className="italic text-bronze">casamento</span>.
+            Simplesmente <span className="italic text-bronze">impecável</span>.
           </h1>
         </div>
       </section>

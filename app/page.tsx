@@ -118,9 +118,38 @@ export default function Page() {
           <p className="mb-10 text-[11px] font-light uppercase tracking-[0.4em] text-[#966a38]">
             O Manifesto
           </p>
-          <p className="text-pretty font-serif text-3xl font-light leading-[1.35] text-foreground sm:text-4xl md:text-5xl">
+          <p className="text-balance font-serif text-3xl font-light leading-[1.35] text-foreground sm:text-4xl md:text-5xl">
             O tempo desacelera diante do que é construído com intenção.
-            Rejeitamos a mediocridade. Reunimos os artesãos da memória.
+          </p>
+
+          <div className="mx-auto mt-14 max-w-2xl space-y-6 text-pretty text-base font-light leading-[1.9] text-foreground/70 md:text-lg">
+            <p>
+              Acreditamos que um casamento não é uma lista de contratos a serem
+              cumpridos. É um patrimônio visual e afetivo. O marco exato onde a
+              fotografia, a música, o sabor e a luz precisam estar em perfeita
+              harmonia.
+            </p>
+            <p className="font-normal text-foreground">
+              O DIVINE nasceu para honrar esse momento.
+            </p>
+            <p>
+              Em vez de infinitos catálogos que geram dúvida e exaustão aos
+              noivos, escolhemos o caminho da clareza. Mapeamos o Centro-Oeste
+              mineiro com um único objetivo: reunir os artesãos da memória.
+              Profissionais guiados pela técnica, pela sensibilidade e pelo
+              respeito absoluto à história de cada casal.
+            </p>
+            <p>
+              Para os noivos, entregamos a paz de uma escolha segura e refinada.
+            </p>
+            <p>Para os talentos, o espaço que a excelência deles merece.</p>
+          </div>
+
+          <p className="mt-14 font-serif text-2xl font-light italic leading-[1.4] text-[#966a38] md:text-3xl">
+            Menos ruído. Mais essência.
+          </p>
+          <p className="mt-4 text-[11px] font-light uppercase tracking-[0.4em] text-foreground/60">
+            Isto é o DIVINE.
           </p>
         </motion.div>
       </section>

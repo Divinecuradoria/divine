@@ -283,7 +283,7 @@ export default function Page() {
                 <p className="mb-6 text-[11px] font-light uppercase tracking-[0.5em] text-alabastro/90 drop-shadow">
                   Curadoria Nupcial · Centro-Oeste Mineiro
                 </p>
-                <h1 className="text-balance font-serif text-6xl font-light leading-[0.98] tracking-tight text-alabastro drop-shadow-lg lg:text-7xl xl:text-8xl">
+                <h1 className="text-balance font-serif text-5xl font-light leading-[0.98] tracking-tight text-alabastro [text-shadow:0_2px_18px_rgba(0,0,0,0.6)] lg:text-6xl xl:text-7xl">
                   Simplesmente <span className="italic text-bronze">impecável</span>.
                 </h1>
               </motion.div>

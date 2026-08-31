@@ -49,9 +49,18 @@ export default function Page() {
             O Manifesto
           </a>
 
-          <span className="font-serif text-2xl font-light tracking-[0.35em] text-foreground md:text-3xl">
-            DIVINE
-          </span>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/images/divine-seal.png"
+              alt="Selo DIVINE Curadoria Nupcial"
+              width={44}
+              height={44}
+              className="h-9 w-9 object-contain md:h-11 md:w-11"
+            />
+            <span className="font-serif text-2xl font-light tracking-[0.35em] text-foreground md:text-3xl">
+              DIVINE
+            </span>
+          </div>
 
           <a
             href="#acervo"
@@ -72,7 +81,7 @@ export default function Page() {
           className="max-w-5xl text-balance text-center font-serif text-5xl font-light leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl"
         >
           A seleção definitiva para o seu{" "}
-          <span className="italic text-[#966a38]">rito</span>.
+          <span className="italic text-[#966a38]">casamento</span>.
         </motion.h1>
 
         <motion.div
@@ -181,9 +190,18 @@ export default function Page() {
         <div className="mx-auto max-w-[1400px] px-6 py-24 md:px-12 md:py-32">
           <div className="flex flex-col gap-16 md:flex-row md:items-end md:justify-between">
             <div>
-              <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
-                DIVINE
-              </span>
+              <div className="flex items-center gap-4">
+                <Image
+                  src="/images/divine-seal.png"
+                  alt="Selo DIVINE Curadoria Nupcial"
+                  width={64}
+                  height={64}
+                  className="h-14 w-14 object-contain md:h-16 md:w-16"
+                />
+                <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
+                  DIVINE
+                </span>
+              </div>
               <p className="mt-6 max-w-sm text-sm font-light leading-relaxed text-[#faf8f5]/60">
                 Curadoria nupcial para quem compreende que o extraordinário
                 não se improvisa — se seleciona.

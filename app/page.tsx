@@ -158,6 +158,7 @@ export default function Page() {
           </nav>
 
           <a href="#" className="flex items-center justify-start gap-3 md:justify-center">
+            <Image src="/images/divine-seal.png" alt="Selo DIVINE" width={48} height={48} className="h-10 w-10 object-contain" />
             <span className="font-serif text-xl font-light tracking-[0.35em] text-onix md:text-2xl">
               DIVINE
             </span>

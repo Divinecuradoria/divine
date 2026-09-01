@@ -17,16 +17,13 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: 'DIVINE — Curadoria Nupcial',
-  description:
-    'A seleção definitiva para o seu rito. Curadoria de fornecedores de luxo para casamentos memoráveis.',
-  generator: 'v0.app',
+export const metadata = {
+  title: "DIVINE | Curadoria Nupcial",
+  description: "A curadoria definitiva para o seu casamento. Simplesmente impecável. Centro-Oeste Mineiro.",
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+    icon: "/images/divine-seal.png",
+  },
+}
       },
       {
         url: '/icon-dark-32x32.png',

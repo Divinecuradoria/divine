@@ -178,7 +178,7 @@ export default function Page() {
         <div className="mx-auto max-w-[1600px]">
           <div className="grid grid-cols-2 gap-2 md:h-[82vh] md:grid-cols-12 md:grid-rows-2">
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="https://images.unsplash.com/photo-1549416878-b9ca95e19fd4?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
+              <Image src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
             </div>
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover" />
@@ -282,14 +282,18 @@ export default function Page() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-onix text-alabastro">
-        <div className="mx-auto max-w-[1600px] px-5 py-24 md:px-10 md:py-28">
-          <div className="flex flex-col gap-16 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="flex items-center gap-4">
-                <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
-                  DIVINE
-                </span>
+<div className="flex items-center gap-4">
+  <Image 
+    src="/images/divine-seal.png" 
+    alt="Selo DIVINE" 
+    width={96} 
+    height={96} 
+    className="h-16 w-16 object-contain md:h-20 md:w-20 invert opacity-90" 
+  />
+  <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
+    DIVINE
+  </span>
+</div>
               </div>
               <p className="mt-6 max-w-sm text-sm font-light leading-relaxed text-alabastro/60">
                 Curadoria nupcial para quem compreende que o extraordinário não se improvisa — se seleciona.

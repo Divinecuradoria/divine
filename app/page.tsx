@@ -292,7 +292,7 @@ export default function Page() {
                   alt="Selo DIVINE" 
                   width={96} 
                   height={96} 
-                  className="h-16 w-16 object-contain md:h-20 md:w-20 invert opacity-90" 
+                  className="h-16 w-16 object-contain md:h-20 md:w-20" 
                 />
                 <span className="font-serif text-4xl font-light tracking-[0.35em] md:text-5xl">
                   DIVINE

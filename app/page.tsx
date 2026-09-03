@@ -30,14 +30,14 @@ type Exposicao =
 // A estrutura original (eskeleton) da galeria para manter o layout de revista
 const paredeOriginal: Exposicao[] = [
   { tipo: "categoria", titulo: "A Curadoria", indice: "I", variante: "onix", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo I", categoria: "Exclusivo", imagem: "/images/acervo-gastronomia.png", span: "md:col-span-8" },
-  { tipo: "obra", nome: "Acervo II", categoria: "Exclusivo", imagem: "/images/acervo-floral.png", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo III", categoria: "Exclusivo", imagem: "/images/acervo-atelier.png", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo I", categoria: "Exclusivo", imagem: "/images/acervo-gastronomia.webp", span: "md:col-span-8" },
+  { tipo: "obra", nome: "Acervo II", categoria: "Exclusivo", imagem: "/images/acervo-floral.webp", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo III", categoria: "Exclusivo", imagem: "/images/acervo-atelier.webp", span: "md:col-span-4" },
   { tipo: "categoria", titulo: "O Padrão", indice: "II", variante: "bronze", span: "md:col-span-3" },
   { tipo: "categoria", titulo: "Vanguarda", indice: "III", variante: "contorno", span: "md:col-span-3" },
-  { tipo: "obra", nome: "Acervo IV", categoria: "Exclusivo", imagem: "/images/acervo-fotografia.png", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo V", categoria: "Exclusivo", imagem: "/images/acervo-locacao.png", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo VI", categoria: "Exclusivo", imagem: "/images/acervo-confeitaria.png", span: "md:col-span-7" },
+  { tipo: "obra", nome: "Acervo IV", categoria: "Exclusivo", imagem: "/images/acervo-fotografia.webp", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo V", categoria: "Exclusivo", imagem: "/images/acervo-locacao.webp", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo VI", categoria: "Exclusivo", imagem: "/images/acervo-confeitaria.webp", span: "md:col-span-7" },
   { tipo: "categoria", titulo: "A Excelência", indice: "IV", variante: "onix", span: "md:col-span-5" },
 ]
 
@@ -158,7 +158,7 @@ export default function Page() {
           </nav>
 
           <a href="#" className="flex items-center justify-start gap-3 md:justify-center">
-            <Image src="/images/divine-seal.png" alt="Selo DIVINE" width={72} height={72} className="h-16 w-16 object-contain" />
+            <Image src="/images/divine-seal.webp" alt="Selo DIVINE" width={72} height={72} className="h-16 w-16 object-contain" />
             <span className="font-serif text-xl font-light tracking-[0.35em] text-onix md:text-2xl">
               DIVINE
             </span>
@@ -288,7 +288,7 @@ export default function Page() {
             <div>
               <div className="flex items-center gap-4">
                 <Image 
-                  src="/images/divine-seal.png" 
+                  src="/images/divine-seal.webp" 
                   alt="Selo DIVINE" 
                   width={96} 
                   height={96} 

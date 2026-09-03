@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "DIVINE | Curadoria Nupcial",
   description: "A curadoria definitiva para o seu casamento. Simplesmente impecável. Centro-Oeste Mineiro.",
   icons: {
-    icon: "/images/favicon-16x16.png",
+    icon: "/images/favicon-16x16.webp",
   },
 }
 

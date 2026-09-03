@@ -256,9 +256,9 @@ function Diretorio() {
         supabase.from("cities").select("name, state, slug").order("name"),
       ])
       if (resFornecedores.error) setErro(true)
-      if (resFornecedores.data) setFornecedores(resFornecedores as Fornecedor[])
-      if (resCategorias.data) setCategorias(resCategorias)
-      if (resCidades.data) setCidades(resCidades)
+      if (resFornecedores.data) setFornecedores(resFornecedores.data as unknown as Fornecedor[])
+      if (resCategorias.data) setCategorias(resCategorias.data as CategoriaRef[])
+      if (resCidades.data) setCidades(resCidades.data as { name: string; state: string; slug: string }[])
       setCarregando(false)
     }
     carregar()

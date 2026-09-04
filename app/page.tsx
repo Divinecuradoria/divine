@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowUpRight, Instagram, Mail, Play } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
 
 // Conexão com o cofre de dados
@@ -284,11 +284,13 @@ export default function Page() {
       {/* FOOTER */}
       <footer className="bg-onix text-alabastro">
         <div className="mx-auto max-w-[1600px] px-5 py-24 md:px-10 md:py-28">
-          <div className="flex flex-col gap-16 md:flex-row md:items-end md:justify-between">
-            <div>
+          <div className="grid grid-cols-1 gap-16 md:grid-cols-12 md:gap-8">
+            
+            {/* Bloco da Marca */}
+            <div className="md:col-span-5">
               <div className="flex items-center gap-4">
                 <Image 
-                  src="/images/divine-seal.webp" 
+                  src="/images/divine-seal.png" 
                   alt="Selo DIVINE" 
                   width={96} 
                   height={96} 
@@ -302,6 +304,42 @@ export default function Page() {
                 Curadoria nupcial para quem compreende que o extraordinário não se improvisa — se seleciona.
               </p>
             </div>
+
+            {/* Links Institucionais */}
+            <div className="md:col-span-3 md:col-start-7">
+              <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Institucional</p>
+              <nav className="flex flex-col gap-4">
+                <Link href="/termos" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  A Curadoria
+                </Link>
+                <Link href="/privacidade" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  Política de Privacidade
+                </Link>
+                <Link href="/criterios" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  Critérios do Selo
+                </Link>
+              </nav>
+            </div>
+
+            {/* Contatos e Redes */}
+            <div className="md:col-span-3">
+              <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Conexão</p>
+              <nav className="flex flex-col gap-4">
+                <a href="mailto:divinecuradorianupcial@gmail.com" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  <Mail className="h-4 w-4 stroke-[1.5]" />
+                  <span>Concierge</span>
+                </a>
+                <a href="https://instagram.com/divinecuradoria" target="_blank" rel="noreferrer" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  <Instagram className="h-4 w-4 stroke-[1.5]" />
+                  <span>@divinecuradoria</span>
+                </a>
+                <a href="#" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                  <Play className="h-4 w-4 stroke-[1.5]" />
+                  <span>Acervo em Vídeo</span>
+                </a>
+              </nav>
+            </div>
+            
           </div>
           <div className="mt-20 flex flex-col gap-4 border-t border-alabastro/10 pt-8 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40 sm:flex-row sm:items-center sm:justify-between">
             <span>© {new Date().getFullYear()} DIVINE Curadoria Nupcial</span>
@@ -309,6 +347,3 @@ export default function Page() {
           </div>
         </div>
       </footer>
-    </div>
-  )
-}

@@ -345,5 +345,8 @@ export default function Page() {
             <span>© {new Date().getFullYear()} DIVINE Curadoria Nupcial</span>
             <span>Simplesmente impecável</span>
           </div>
-        </div>
-      </footer>
+       </div>
+       </footer>
+      </div>
+    )
+  }

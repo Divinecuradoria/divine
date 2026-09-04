@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { motion } from "framer-motion"
-import { ArrowUpRight, Instagram, Mail, Play } from "lucide-react"
+import { Instagram, Mail, Play } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
+import { Header } from "@/components/Header"
 
-// Conexão com o cofre de dados
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -27,17 +28,16 @@ type Exposicao =
       span: string
     }
 
-// A estrutura original (eskeleton) da galeria para manter o layout de revista
 const paredeOriginal: Exposicao[] = [
   { tipo: "categoria", titulo: "A Curadoria", indice: "I", variante: "onix", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo I", categoria: "Exclusivo", imagem: "/images/acervo-gastronomia.webp", span: "md:col-span-8" },
-  { tipo: "obra", nome: "Acervo II", categoria: "Exclusivo", imagem: "/images/acervo-floral.webp", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo III", categoria: "Exclusivo", imagem: "/images/acervo-atelier.webp", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo I", categoria: "Exclusivo", imagem: "/images/acervo-gastronomia.png", span: "md:col-span-8" },
+  { tipo: "obra", nome: "Acervo II", categoria: "Exclusivo", imagem: "/images/acervo-floral.png", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo III", categoria: "Exclusivo", imagem: "/images/acervo-atelier.png", span: "md:col-span-4" },
   { tipo: "categoria", titulo: "O Padrão", indice: "II", variante: "bronze", span: "md:col-span-3" },
   { tipo: "categoria", titulo: "Vanguarda", indice: "III", variante: "contorno", span: "md:col-span-3" },
-  { tipo: "obra", nome: "Acervo IV", categoria: "Exclusivo", imagem: "/images/acervo-fotografia.webp", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo V", categoria: "Exclusivo", imagem: "/images/acervo-locacao.webp", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo VI", categoria: "Exclusivo", imagem: "/images/acervo-confeitaria.webp", span: "md:col-span-7" },
+  { tipo: "obra", nome: "Acervo IV", categoria: "Exclusivo", imagem: "/images/acervo-fotografia.png", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo V", categoria: "Exclusivo", imagem: "/images/acervo-locacao.png", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo VI", categoria: "Exclusivo", imagem: "/images/acervo-confeitaria.png", span: "md:col-span-7" },
   { tipo: "categoria", titulo: "A Excelência", indice: "IV", variante: "onix", span: "md:col-span-5" },
 ]
 
@@ -52,7 +52,7 @@ const fadeUp = {
 
 function ObraCard({ nome, categoria, imagem, index }: { nome: string; categoria: string; imagem: string; index: number }) {
   return (
-    <a href="#" className="group relative block h-72 overflow-hidden md:h-full">
+    <Link href="/acervo" className="group relative block h-72 overflow-hidden md:h-full">
       <Image
         src={imagem || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop"}
         alt={`${nome} — ${categoria}`}
@@ -73,7 +73,7 @@ function ObraCard({ nome, categoria, imagem, index }: { nome: string; categoria:
       <span className="absolute right-5 top-5 text-[10px] font-light tabular-nums tracking-[0.3em] text-alabastro mix-blend-difference">
         {String(index).padStart(2, "0")}
       </span>
-    </a>
+    </Link>
   )
 }
 
@@ -122,7 +122,6 @@ export default function Page() {
             const fornecedor = data[indexFornecedor]
             indexFornecedor++
             
-            // Tratamento caso a categoria venha como array ou objeto
             const nomeCategoria = Array.isArray(fornecedor.categories) 
               ? fornecedor.categories[0]?.name 
               : (fornecedor.categories as any)?.name
@@ -145,45 +144,21 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-alabastro text-onix">
-      {/* HEADER */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-linha bg-alabastro/85 backdrop-blur-md">
-        <div className="mx-auto grid max-w-[1600px] grid-cols-2 items-center px-5 py-4 md:grid-cols-3 md:px-10">
-          <nav className="hidden items-center gap-8 md:flex">
-            <a href="#manifesto" className="text-[11px] font-light uppercase tracking-[0.25em] text-onix/60 transition-colors duration-300 hover:text-bronze">
-              O Manifesto
-            </a>
-            <a href="#acervo" className="text-[11px] font-light uppercase tracking-[0.25em] text-onix/60 transition-colors duration-300 hover:text-bronze">
-              O Acervo
-            </a>
-          </nav>
-
-          <a href="#" className="flex items-center justify-start gap-3 md:justify-center">
-            <Image src="/images/divine-seal.webp" alt="Selo DIVINE" width={72} height={72} className="h-16 w-16 object-contain" />
-            <span className="font-serif text-xl font-light tracking-[0.35em] text-onix md:text-2xl">
-              DIVINE
-            </span>
-          </a>
-
-          <div className="flex items-center justify-end">
-            <a href="#" className="group relative text-[11px] font-light uppercase tracking-[0.25em] text-onix transition-colors duration-300 hover:text-bronze">
-              Submeter Portfólio
-              <span className="absolute -bottom-1 left-0 h-px w-0 bg-bronze transition-all duration-300 group-hover:w-full" />
-            </a>
-          </div>
-        </div>
-      </header>
-
-      {/* HERO EDITORIAL */}
+      <Header />
+      
       <section className="relative px-3 pb-20 pt-24 md:px-4 md:pt-28">
         <div className="mx-auto max-w-[1600px]">
           <div className="grid grid-cols-2 gap-2 md:h-[82vh] md:grid-cols-12 md:grid-rows-2">
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
             </div>
-            <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover" />
-              <div className="absolute inset-0 bg-onix/20" />
-            </div>
+            <Link href="/editorial" className="group relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
+              <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover transition-transform duration-700 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-onix/20 transition-colors duration-500 group-hover:bg-onix/40" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                <span className="font-serif text-3xl font-light tracking-widest text-alabastro">O EDITORIAL</span>
+              </div>
+            </Link>
             <div className="relative col-span-1 aspect-[4/3] overflow-hidden md:col-span-3 md:row-span-1 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop" alt="Detalhe" fill className="object-cover" />
             </div>
@@ -205,18 +180,8 @@ export default function Page() {
             </div>
           </div>
         </div>
-
-        <div className="mt-10 px-3 md:hidden">
-          <p className="mb-4 text-[10px] font-light uppercase tracking-[0.4em] text-bronze">
-            Curadoria Nupcial · Centro-Oeste Mineiro
-          </p>
-          <h1 className="text-balance font-serif text-5xl font-light leading-[0.98] tracking-tight text-onix">
-            Simplesmente <span className="italic text-bronze">impecável</span>.
-          </h1>
-        </div>
       </section>
 
-      {/* ACERVO */}
       <section id="acervo" className="scroll-mt-24 px-3 py-20 md:px-4 md:py-28">
         <div className="mx-auto max-w-[1600px]">
           <div className="mb-10 flex items-end justify-between border-t border-linha px-2 pt-6 md:mb-12">
@@ -252,7 +217,6 @@ export default function Page() {
         </div>
       </section>
 
-      {/* MANIFESTO */}
       <section id="manifesto" className="scroll-mt-24 border-t border-linha px-5 py-24 md:px-10 md:py-32">
         <div className="mx-auto max-w-[1200px]">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeUp}>
@@ -281,12 +245,10 @@ export default function Page() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="bg-onix text-alabastro">
         <div className="mx-auto max-w-[1600px] px-5 py-24 md:px-10 md:py-28">
           <div className="grid grid-cols-1 gap-16 md:grid-cols-12 md:gap-8">
             
-            {/* Bloco da Marca */}
             <div className="md:col-span-5">
               <div className="flex items-center gap-4">
                 <Image 
@@ -305,7 +267,6 @@ export default function Page() {
               </p>
             </div>
 
-            {/* Links Institucionais */}
             <div className="md:col-span-3 md:col-start-7">
               <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Institucional</p>
               <nav className="flex flex-col gap-4">
@@ -321,7 +282,6 @@ export default function Page() {
               </nav>
             </div>
 
-            {/* Contatos e Redes */}
             <div className="md:col-span-3">
               <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Conexão</p>
               <nav className="flex flex-col gap-4">
@@ -345,8 +305,8 @@ export default function Page() {
             <span>© {new Date().getFullYear()} DIVINE Curadoria Nupcial</span>
             <span>Simplesmente impecável</span>
           </div>
-       </div>
-       </footer>
-      </div>
-    )
-  }
+        </div>
+      </footer>
+    </div>
+  )
+}

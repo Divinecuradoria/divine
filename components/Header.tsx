@@ -49,14 +49,12 @@ export function Header() {
         <div className="flex items-center justify-end gap-5">
           {!isLoggedIn ? (
             <>
-              <Link href="/aplicar" className="hidden text-[10px] font-light uppercase tracking-[0.2em] text-onix/60 transition-colors duration-300 hover:text-bronze md:block">
+              <Link href="/aplicar" className="group relative text-[10px] font-light uppercase tracking-[0.2em] text-onix transition-colors duration-300 hover:text-bronze">
                 Solicitar Curadoria
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-bronze transition-all duration-300 group-hover:w-full" />
               </Link>
-              <Link href="/passaporte" className="hidden text-[10px] font-light uppercase tracking-[0.2em] text-onix/60 transition-colors duration-300 hover:text-bronze md:block">
+              <Link href="/passaporte" className="group relative text-[10px] font-light uppercase tracking-[0.2em] text-onix transition-colors duration-300 hover:text-bronze">
                 Criar Passaporte
-              </Link>
-              <Link href="/login" className="group relative text-[10px] font-light uppercase tracking-[0.2em] text-onix transition-colors duration-300 hover:text-bronze">
-                Acesso Restrito
                 <span className="absolute -bottom-1 left-0 h-px w-0 bg-bronze transition-all duration-300 group-hover:w-full" />
               </Link>
             </>

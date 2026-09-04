@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Instagram, Mail, Play } from "lucide-react"
 import { createClient } from "@supabase/supabase-js"
 import { Header } from "@/components/Header"
 
@@ -286,15 +285,15 @@ export default function Page() {
               <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Conexão</p>
               <nav className="flex flex-col gap-4">
                 <a href="mailto:divinecuradorianupcial@gmail.com" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  <Mail className="h-4 w-4 stroke-[1.5]" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                   <span>Concierge</span>
                 </a>
                 <a href="https://instagram.com/divinecuradoria" target="_blank" rel="noreferrer" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  <Instagram className="h-4 w-4 stroke-[1.5]" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                   <span>@divinecuradoria</span>
                 </a>
                 <a href="#" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  <Play className="h-4 w-4 stroke-[1.5]" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><polygon points="6 3 20 12 6 21 6 3"/></svg>
                   <span>Acervo em Vídeo</span>
                 </a>
               </nav>

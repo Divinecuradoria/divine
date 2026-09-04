@@ -5,10 +5,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { createClient } from "@supabase/supabase-js"
-import { Header } from "@/components/Header"
+import { Header } from "../components/Header"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 type Exposicao =
@@ -29,14 +29,14 @@ type Exposicao =
 
 const paredeOriginal: Exposicao[] = [
   { tipo: "categoria", titulo: "A Curadoria", indice: "I", variante: "onix", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo I", categoria: "Exclusivo", imagem: "/images/acervo-gastronomia.png", span: "md:col-span-8" },
-  { tipo: "obra", nome: "Acervo II", categoria: "Exclusivo", imagem: "/images/acervo-floral.png", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo III", categoria: "Exclusivo", imagem: "/images/acervo-atelier.png", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo I", categoria: "Alta Gastronomia", imagem: "https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800&auto=format&fit=crop", span: "md:col-span-8" },
+  { tipo: "obra", nome: "Acervo II", categoria: "Design Floral", imagem: "https://images.unsplash.com/photo-1522332616212-70b7d3410657?q=80&w=800&auto=format&fit=crop", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo III", categoria: "Alta Costura", imagem: "https://images.unsplash.com/photo-1596450514735-111a2fe02935?q=80&w=800&auto=format&fit=crop", span: "md:col-span-4" },
   { tipo: "categoria", titulo: "O Padrão", indice: "II", variante: "bronze", span: "md:col-span-3" },
   { tipo: "categoria", titulo: "Vanguarda", indice: "III", variante: "contorno", span: "md:col-span-3" },
-  { tipo: "obra", nome: "Acervo IV", categoria: "Exclusivo", imagem: "/images/acervo-fotografia.png", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo V", categoria: "Exclusivo", imagem: "/images/acervo-locacao.png", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo VI", categoria: "Exclusivo", imagem: "/images/acervo-confeitaria.png", span: "md:col-span-7" },
+  { tipo: "obra", nome: "Acervo IV", categoria: "Cinematografia", imagem: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo V", categoria: "Arquitetura", imagem: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop", span: "md:col-span-4" },
+  { tipo: "obra", nome: "Acervo VI", categoria: "Alta Confeitaria", imagem: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?q=80&w=800&auto=format&fit=crop", span: "md:col-span-7" },
   { tipo: "categoria", titulo: "A Excelência", indice: "IV", variante: "onix", span: "md:col-span-5" },
 ]
 
@@ -106,35 +106,39 @@ export default function Page() {
 
   useEffect(() => {
     async function fetchCuradoria() {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('id, business_name, cover_image_url, slug, categories(name)')
-        .eq('is_active', true)
-        .eq('has_divine_seal', true)
-        .order('created_at', { ascending: false })
-        .limit(6)
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('id, business_name, cover_image_url, slug, categories(name)')
+          .eq('is_active', true)
+          .eq('has_divine_seal', true)
+          .order('created_at', { ascending: false })
+          .limit(6)
 
-      if (data && data.length > 0) {
-        let indexFornecedor = 0
-        const novaGrade = paredeOriginal.map((item) => {
-          if (item.tipo === "obra" && indexFornecedor < data.length) {
-            const fornecedor = data[indexFornecedor]
-            indexFornecedor++
-            
-            const nomeCategoria = Array.isArray(fornecedor.categories) 
-              ? fornecedor.categories[0]?.name 
-              : (fornecedor.categories as any)?.name
+        if (data && data.length > 0) {
+          let indexFornecedor = 0
+          const novaGrade = paredeOriginal.map((item) => {
+            if (item.tipo === "obra" && indexFornecedor < data.length) {
+              const fornecedor = data[indexFornecedor]
+              indexFornecedor++
+              
+              const nomeCategoria = Array.isArray(fornecedor.categories) 
+                ? fornecedor.categories[0]?.name 
+                : (fornecedor.categories as any)?.name
 
-            return {
-              ...item,
-              nome: fornecedor.business_name,
-              categoria: nomeCategoria || "Curadoria DIVINE",
-              imagem: fornecedor.cover_image_url || item.imagem
+              return {
+                ...item,
+                nome: fornecedor.business_name,
+                categoria: nomeCategoria || "Curadoria DIVINE",
+                imagem: fornecedor.cover_image_url || item.imagem
+              }
             }
-          }
-          return item
-        })
-        setAcervo(novaGrade)
+            return item
+          })
+          setAcervo(novaGrade)
+        }
+      } catch (err) {
+        // Silencia erro se a Vercel compilar com o link provisório
       }
     }
     

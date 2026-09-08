@@ -4,12 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, Loader2, MailCheck, Sparkles } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
+import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-)
 
 function LogoGoogle() {
   return (
@@ -44,30 +40,35 @@ export default function Entrar() {
   async function entrarComGoogle() {
     setErro("")
     setCarregandoGoogle(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (error) {
-      setErro("Não foi possível abrir o Google. Confirme a configuração do provedor no Supabase.")
-      setCarregandoGoogle(false)
-    }
+    try {
+      const supabase = getSupabase()
+      if (!supabase) { setErro(ACCESS_UNAVAILABLE); return }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (error) throw error
+    } catch {
+      setErro("Não foi possível entrar com o Google. Tente novamente ou receba um link por e-mail.")
+    } finally { setCarregandoGoogle(false) }
   }
 
   async function enviarLinkMagico(e: React.FormEvent) {
     e.preventDefault()
     setErro("")
     setCarregandoEmail(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-    setCarregandoEmail(false)
-    if (error) {
-      setErro("Não foi possível enviar agora. Confira o e-mail e tente de novo em instantes.")
-    } else {
-      setEnviadoPara(email)
-    }
+    try {
+      const supabase = getSupabase()
+      if (!supabase) { setErro(ACCESS_UNAVAILABLE); return }
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (error) throw error
+      setEnviadoPara(email.trim())
+    } catch {
+      setErro("Não foi possível enviar agora. Confira o e-mail e tente novamente em instantes.")
+    } finally { setCarregandoEmail(false) }
   }
 
   if (enviadoPara) {
@@ -82,7 +83,7 @@ export default function Entrar() {
           <MailCheck className="mx-auto h-10 w-10 text-bronze" />
           <p className="mt-4 font-serif text-3xl">Link mágico enviado</p>
           <p className="mt-3 text-sm text-alabastro/60">
-            Enviamos um acesso para <span className="text-alabastro">{enviadoPara}</span>. Ele expira em 1 hora.
+            Enviamos um acesso para <span className="text-alabastro">{enviadoPara}</span>. Use o link mais recente para continuar.
           </p>
           <p className="mt-2 text-xs text-alabastro/40">Não chegou? Espere um minuto e confira o spam.</p>
           <button
@@ -117,12 +118,12 @@ export default function Entrar() {
         <div className="rounded-3xl border border-alabastro/10 bg-alabastro/[0.04] p-8 backdrop-blur">
           <p className="text-center font-serif text-3xl">O time dos sonhos</p>
           <p className="mt-2 text-center text-sm text-alabastro/60">
-            Salve fornecedores, monte pastas e acompanhe o countdown. Sem senha, sem atrito.
+            Entre para salvar seus fornecedores favoritos. Use o Google ou receba um link de acesso por e-mail.
           </p>
 
           <button
             onClick={entrarComGoogle}
-            disabled={carregandoGoogle}
+            disabled={carregandoGoogle || carregandoEmail}
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-alabastro py-3.5 text-sm font-medium text-onix transition hover:bg-white disabled:opacity-60"
           >
             {carregandoGoogle ? (
@@ -138,10 +139,12 @@ export default function Entrar() {
           </div>
 
           <form onSubmit={enviarLinkMagico}>
-            <label className="text-[10px] uppercase tracking-[0.3em] text-alabastro/50">
+            <label htmlFor="email" className="text-[10px] uppercase tracking-[0.3em] text-alabastro/50">
               Seu melhor e-mail
             </label>
             <input
+              id="email"
+              autoComplete="email"
               type="email"
               required
               value={email}
@@ -151,7 +154,7 @@ export default function Entrar() {
             />
             <button
               type="submit"
-              disabled={carregandoEmail || !email}
+              disabled={carregandoEmail || carregandoGoogle || !email}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-bronze py-3.5 text-sm font-semibold text-alabastro transition hover:bg-bronze/80 disabled:opacity-50"
             >
               {carregandoEmail ? (
@@ -164,14 +167,14 @@ export default function Entrar() {
           </form>
 
           {erro && (
-            <p className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs text-red-200">
+            <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs text-red-200">
               {erro}
             </p>
           )}
         </div>
 
         <p className="mt-6 text-center text-[11px] text-alabastro/40">
-          Fornecedores: o painel de autogestão chega na Fase 4.
+          Precisa de ajuda? Fale com a curadoria pelo e-mail divinecuradorianupcial@gmail.com.
         </p>
       </motion.div>
     </div>

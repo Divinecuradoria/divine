@@ -4,71 +4,56 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-)
+import { getSupabase } from "@/lib/supabase"
 
 export default function PaginaCallback() {
   const router = useRouter()
   const [falhou, setFalhou] = useState(false)
 
   useEffect(() => {
-    const sp = new URLSearchParams(window.location.search)
-    if (sp.get("error") || sp.get("error_description")) {
+    const supabase = getSupabase()
+    const query = new URLSearchParams(window.location.search)
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    if (!supabase || query.has("error") || hash.has("error")) {
       setFalhou(true)
       return
     }
-
     let encerrado = false
-
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" && !encerrado) router.replace("/diretorio")
-    })
-
-    // Sessão já existente (retorno instantâneo)
-    supabase.auth.getUser().then(({ data: userData }) => {
-      if (userData.user && !encerrado) router.replace("/diretorio")
-    })
-
-    // Rede de segurança: se nada acontecer em 8s, volta para a home
-    const t = setTimeout(() => {
-      if (!encerrado) router.replace("/")
-    }, 8000)
-
-    return () => {
+    let timer: ReturnType<typeof setTimeout>
+    function entrar() {
+      if (encerrado) return
       encerrado = true
-      data.subscription.unsubscribe()
-      clearTimeout(t)
+      clearTimeout(timer)
+      router.replace("/diretorio")
     }
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) entrar()
+    })
+    timer = setTimeout(() => {
+      if (!encerrado) { encerrado = true; setFalhou(true) }
+    }, 15000)
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (encerrado) return
+      if (data.session) entrar()
+      else if (error) { encerrado = true; clearTimeout(timer); setFalhou(true) }
+    }).catch(() => {
+      if (!encerrado) { encerrado = true; clearTimeout(timer); setFalhou(true) }
+    })
+    return () => { encerrado = true; clearTimeout(timer); data.subscription.unsubscribe() }
   }, [router])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-onix px-4 font-sans text-alabastro">
-      {falhou ? (
-        <div className="text-center">
-          <p className="font-serif text-3xl">O link expirou</p>
-          <p className="mt-3 text-sm text-alabastro/60">
-            Links mágicos valem por pouco tempo. Sem problemas — é só pedir outro.
-          </p>
-          <Link
-            href="/entrar"
-            className="mt-8 inline-block rounded-full bg-bronze px-6 py-3 text-[11px] uppercase tracking-[0.25em] text-alabastro transition hover:bg-bronze/80"
-          >
-            Entrar novamente
-          </Link>
-        </div>
-      ) : (
-        <>
-          <p className="font-serif text-4xl tracking-[0.25em]">DIVINE</p>
-          <Loader2 className="mt-6 h-5 w-5 animate-spin text-bronze" />
-          <p className="mt-4 text-xs uppercase tracking-[0.3em] text-alabastro/50">
-            Abrindo o seu baú...
-          </p>
-        </>
-      )}
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-onix px-4 text-alabastro">
+      {falhou ? <div className="max-w-md text-center" role="alert">
+        <h1 className="font-serif text-3xl">Não foi possível concluir o acesso</h1>
+        <p className="mt-3 text-sm text-alabastro/70">O link pode ter expirado ou a conexão foi interrompida. Tente entrar novamente para continuar.</p>
+        <Link href="/entrar" className="mt-8 inline-block rounded-full bg-bronze px-6 py-3 text-sm">Entrar novamente</Link>
+        <Link href="/" className="mt-5 block text-sm underline">Voltar ao início</Link>
+      </div> : <div role="status" className="text-center">
+        <p className="font-serif text-4xl tracking-[0.25em]">DIVINE</p>
+        <Loader2 className="mx-auto mt-6 h-5 w-5 animate-spin text-bronze" />
+        <p className="mt-4 text-xs uppercase tracking-widest">Concluindo seu acesso...</p>
+      </div>}
+    </main>
   )
 }

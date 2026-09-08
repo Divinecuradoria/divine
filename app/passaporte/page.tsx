@@ -3,12 +3,10 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { createClient } from "@supabase/supabase-js"
+import { Header } from "@/components/Header"
+import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 // Conexão com o cofre
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
-const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default function CriarPassaporte() {
   const [loading, setLoading] = useState(false)
@@ -37,11 +35,17 @@ export default function CriarPassaporte() {
     setStatus({ msg: "", tipo: "" })
 
     try {
+      const supabase = getSupabase()
+      if (!supabase) {
+        setStatus({ msg: ACCESS_UNAVAILABLE, tipo: "erro" })
+        return
+      }
       // Cria a conta no módulo de Autenticação do Supabase
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             role: "couple",
             full_name: form.nome,
@@ -57,7 +61,7 @@ export default function CriarPassaporte() {
       if (error) throw error
 
       // Sucesso
-      setStatus({ msg: "Passaporte emitido com sucesso! O rito começou.", tipo: "sucesso" })
+      setStatus({ msg: data.session ? "Conta criada! Acesse o diretório para encontrar e salvar fornecedores." : "Confira seu e-mail para confirmar o cadastro. Se já possui uma conta, use a página de entrada.", tipo: "sucesso" })
       
       // Limpa o formulário após o sucesso
       setForm({
@@ -74,6 +78,7 @@ export default function CriarPassaporte() {
 
   return (
     <div className="min-h-screen bg-alabastro px-5 pt-32 pb-24 md:pt-40 text-onix">
+      <Header />
       <div className="mx-auto max-w-[800px]">
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
@@ -88,7 +93,7 @@ export default function CriarPassaporte() {
               Criar Passaporte
             </h1>
             <p className="mx-auto mt-6 max-w-md text-sm font-light leading-relaxed text-onix/70">
-              Inicie a sua jornada. Um espaço restrito e inteligente para orquestrar o seu casamento com a curadoria do LUMI.
+              Inicie a sua jornada. Crie sua conta para encontrar e salvar os fornecedores do seu casamento.
             </p>
           </div>
 
@@ -169,7 +174,7 @@ export default function CriarPassaporte() {
                 </div>
                 
                 <div className="relative">
-                  <input type="password" required id="password" value={form.password} onChange={handleChange} className="peer w-full border-b border-linha bg-transparent py-3 text-sm font-light text-onix placeholder-transparent focus:border-bronze focus:outline-none transition-colors" placeholder="Criar Senha" />
+                  <input type="password" minLength={6} autoComplete="new-password" required id="password" value={form.password} onChange={handleChange} className="peer w-full border-b border-linha bg-transparent py-3 text-sm font-light text-onix placeholder-transparent focus:border-bronze focus:outline-none transition-colors" placeholder="Criar Senha" />
                   <label htmlFor="password" className="absolute left-0 -top-3.5 text-[10px] uppercase tracking-widest text-onix/50 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-focus:-top-3.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-widest peer-focus:text-bronze">
                     Criar Senha
                   </label>
@@ -179,7 +184,7 @@ export default function CriarPassaporte() {
 
             {/* Mensagem de Feedback */}
             {status.msg && (
-              <div className={`p-4 text-[11px] font-light uppercase tracking-widest ${status.tipo === "sucesso" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+              <div role="status" aria-live="polite" className={`p-4 text-[11px] font-light uppercase tracking-widest ${status.tipo === "sucesso" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                 {status.msg}
               </div>
             )}
@@ -196,7 +201,7 @@ export default function CriarPassaporte() {
             </div>
             
             <p className="text-center text-xs font-light text-onix/50">
-              Já possui um passaporte ativo? <Link href="/login" className="text-onix hover:text-bronze hover:underline underline-offset-4">Acesse o seu painel</Link>.
+              Já possui um passaporte ativo? <Link href="/entrar" className="text-onix hover:text-bronze hover:underline underline-offset-4">Entre na sua conta</Link>.
             </p>
 
           </form>

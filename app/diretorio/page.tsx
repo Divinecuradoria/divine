@@ -1,8 +1,8 @@
 "use client"
 
-import { Suspense, useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import Link from "next/link"
+import { Header } from "@/components/Header"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
@@ -14,12 +14,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
+import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-)
 
 type CategoriaRef = { name: string; slug: string }
 
@@ -92,12 +88,14 @@ function formataFaixa(f: Fornecedor): string {
   return "Sob consulta"
 }
 
-function linkZap(f: Fornecedor): string {
+function linkZap(f: Fornecedor): string | undefined {
   const numero = (f.whatsapp || "").replace(/\D/g, "")
   const texto = encodeURIComponent(
     `Olá! Encontrei o seu trabalho na DIVINE e adoraria um orçamento para o meu casamento.`
   )
-  return `https://wa.me/${numero}?text=${texto}`
+  const internacional = numero.length === 10 || numero.length === 11 ? `55${numero}` : numero
+  if (!/^[1-9]\d{9,14}$/.test(internacional)) return undefined
+  return `https://wa.me/${internacional}?text=${texto}`
 }
 
 function Chip({
@@ -136,6 +134,7 @@ function CartaoFornecedor({
   aoFavoritar: (id: string) => void
   aoChamar: (id: string) => void
 }) {
+  const contato = linkZap(fornecedor)
   const categorias = normalizaCategorias(fornecedor.categories)
   const local = fornecedor.city ? `${fornecedor.city.name}, ${fornecedor.city.state}` : "Minas Gerais"
 
@@ -148,7 +147,7 @@ function CartaoFornecedor({
       className="group relative overflow-hidden rounded-2xl border border-linha bg-white shadow-[0_10px_40px_-24px_rgba(18,18,18,0.2)]"
     >
       {/* A imagem ocupa ~80% do card (Camada 2) */}
-      <Link href={`/fornecedor/${fornecedor.slug}`} className="relative block aspect-[4/5] overflow-hidden">
+      <div className="relative block aspect-[4/5] overflow-hidden">
         {fornecedor.cover_image_url ? (
           <Image
             src={fornecedor.cover_image_url}
@@ -171,7 +170,7 @@ function CartaoFornecedor({
             {formataFaixa(fornecedor)}
           </span>
         </div>
-      </Link>
+      </div>
 
       {/* Tags de nicho + selo de curadoria */}
       <div className="absolute left-3 top-3 z-10 flex max-w-[80%] flex-wrap gap-1.5">
@@ -193,7 +192,8 @@ function CartaoFornecedor({
       {/* Coração — wishlist da noiva */}
       <button
         onClick={() => aoFavoritar(fornecedor.id)}
-        aria-label="Salvar nos favoritos"
+        aria-label={salvo ? "Remover dos favoritos" : "Salvar nos favoritos"}
+        aria-pressed={salvo}
         className="absolute right-3 top-3 z-10 rounded-full bg-alabastro/95 p-2 text-onix shadow-sm transition hover:scale-110 hover:text-bronze"
       >
         <Heart className={`h-4 w-4 ${salvo ? "fill-bronze text-bronze" : ""}`} />
@@ -209,16 +209,17 @@ function CartaoFornecedor({
         </div>
 
         {/* Regra de ouro: WhatsApp a um clique, direto do card */}
-        <a
-          href={linkZap(fornecedor)}
+        {contato ? <a
+          href={contato}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => aoChamar(fornecedor.id)}
+          aria-label={`Chamar ${fornecedor.business_name} no WhatsApp`}
           title="Chamar no WhatsApp"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-onix text-alabastro transition hover:bg-bronze"
         >
           <MessageCircle className="h-5 w-5" />
-        </a>
+        </a> : <span className="text-xs text-onix/50">Contato indisponível</span>}
       </div>
     </motion.article>
   )
@@ -235,6 +236,7 @@ function Diretorio() {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
   const [aviso, setAviso] = useState("")
+  const pendingFavorites = useRef(new Set<string>())
   const [filtros, setFiltros] = useState<Filtros>({
     categoria: params.get("categoria") || "",
     cidade: params.get("cidade") || "",
@@ -245,6 +247,8 @@ function Diretorio() {
 
   useEffect(() => {
     async function carregar() {
+      const supabase = getSupabase()
+      if (!supabase) { setErro(true); setCarregando(false); return }
       const [resFornecedores, resCategorias, resCidades] = await Promise.all([
         supabase
           .from("suppliers")
@@ -261,11 +265,13 @@ function Diretorio() {
       if (resCidades.data) setCidades(resCidades.data as { name: string; state: string; slug: string }[])
       setCarregando(false)
     }
-    carregar()
+    carregar().catch(() => { setErro(true); setCarregando(false) })
   }, [])
 
   // Carrega os favoritos existentes da noiva (se logada)
   useEffect(() => {
+    const supabase = getSupabase()
+    if (!supabase) return
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return
       const { data: favs } = await supabase
@@ -273,7 +279,7 @@ function Diretorio() {
         .select("supplier_id")
         .eq("user_id", data.user.id)
       if (favs) setFavoritos(new Set(favs.map((f) => f.supplier_id)))
-    })
+    }).catch(() => setAviso("Não foi possível carregar seus favoritos. Tente novamente."))
   }, [])
 
   useEffect(() => {
@@ -303,69 +309,49 @@ function Diretorio() {
   }
 
   async function alternarFavorito(id: string) {
+    if (pendingFavorites.current.has(id)) return
+    pendingFavorites.current.add(id)
     setAviso("")
-    const { data } = await supabase.auth.getUser()
-    if (!data.user) {
-      router.push("/entrar")
-      return
-    }
-    const jaSalvo = favoritos.has(id)
-    setFavoritos((prev) => {
-      const n = new Set(prev)
-      if (jaSalvo) n.delete(id)
-      else n.add(id)
-      return n
-    })
-    if (jaSalvo) {
-      await supabase.from("favorites").delete().match({ user_id: data.user.id, supplier_id: id })
-    } else {
-      const { error } = await supabase
-        .from("favorites")
-        .insert({ user_id: data.user.id, supplier_id: id })
-      if (error) setAviso("Não foi possível salvar agora — confirme a tabela favorites no SQL da Fase 2.")
-    }
+    try {
+      const supabase = getSupabase()
+      if (!supabase) { setAviso(ACCESS_UNAVAILABLE); return }
+      const { data, error: authError } = await supabase.auth.getUser()
+      if (authError || !data.user) { router.push("/entrar"); return }
+      const jaSalvo = favoritos.has(id)
+      const result = jaSalvo
+        ? await supabase.from("favorites").delete().match({ user_id: data.user.id, supplier_id: id })
+        : await supabase.from("favorites").insert({ user_id: data.user.id, supplier_id: id })
+      if (result.error) throw result.error
+      setFavoritos((prev) => {
+        const next = new Set(prev)
+        if (jaSalvo) next.delete(id)
+        else next.add(id)
+        return next
+      })
+      setAviso(jaSalvo ? "Fornecedor removido dos favoritos." : "Fornecedor salvo nos favoritos.")
+    } catch {
+      setAviso("Não foi possível atualizar seus favoritos. Tente novamente.")
+    } finally { pendingFavorites.current.delete(id) }
   }
 
   // Métrica de vaidade: contabiliza o clique que virá no painel do fornecedor
   async function registrarClique(id: string) {
     try {
+      const supabase = getSupabase()
+      if (!supabase) return
       await supabase.from("whatsapp_clicks").insert({ supplier_id: id })
     } catch {}
   }
 
   return (
     <div className="min-h-screen bg-alabastro font-sans text-onix">
-      <header className="sticky top-0 z-40 border-b border-linha bg-alabastro/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/" className="font-serif text-2xl tracking-[0.25em]">
-            DIVINE
-          </Link>
-          <span className="hidden text-[11px] uppercase tracking-[0.3em] text-onix/50 sm:block">
-            Diretório de Curadoria
-          </span>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/entrar"
-              className="rounded-full bg-onix px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-alabastro transition hover:bg-bronze"
-            >
-              Entrar
-            </Link>
-            <Link
-              href="/"
-              className="rounded-full border border-linha px-4 py-2 text-[11px] uppercase tracking-[0.2em] transition hover:border-onix hover:bg-onix hover:text-alabastro"
-            >
-              Voltar
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 pb-10 pt-32 sm:px-6">
         {erro && (
           <div className="mb-6 rounded-xl border border-bronze/40 bg-bronze/5 px-4 py-3 text-sm text-onix/80">
-            Não consegui falar com o acervo. Confirme que o <strong>SQL da Fase 2</strong> foi executado e que
-            as variáveis <code>NEXT_PUBLIC_SUPABASE_URL</code> / <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
-            estão configuradas na Vercel.
+            Não foi possível carregar os fornecedores. Tente novamente em instantes.
+            <button onClick={() => window.location.reload()} className="ml-2 underline">Tentar novamente</button>
           </div>
         )}
 
@@ -373,7 +359,7 @@ function Diretorio() {
           <div>
             <h1 className="font-serif text-4xl sm:text-5xl">O Diretório</h1>
             <p className="mt-2 text-sm text-onix/50">
-              {carregando ? "Abrindo o acervo..." : `${lista.length} fornecedores chancelados`}
+              {carregando ? "Abrindo o acervo..." : `${lista.length} fornecedores encontrados`}
             </p>
           </div>
           <button
@@ -508,7 +494,7 @@ function Diretorio() {
                   </div>
                 ))}
               </div>
-            ) : lista.length === 0 ? (
+            ) : erro ? null : lista.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-linha bg-white/60 p-12 text-center">
                 <p className="font-serif text-2xl">Nenhuma obra com esses filtros</p>
                 <p className="mt-2 text-sm text-onix/50">
@@ -540,7 +526,7 @@ function Diretorio() {
       </main>
 
       {aviso && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-onix px-5 py-2.5 text-xs text-alabastro shadow-xl">
+        <div role="status" aria-live="polite" className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-onix px-5 py-2.5 text-xs text-alabastro shadow-xl">
           {aviso}
         </div>
       )}

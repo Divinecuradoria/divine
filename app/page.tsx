@@ -4,12 +4,10 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { createClient } from "@supabase/supabase-js"
+import { getSupabase } from "@/lib/supabase"
+import SearchBar from "@/components/search-bar"
 import { Header } from "../components/Header"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder"
-const supabase = createClient(supabaseUrl, supabaseKey)
 
 type Exposicao =
   | {
@@ -51,7 +49,7 @@ const fadeUp = {
 
 function ObraCard({ nome, categoria, imagem, index }: { nome: string; categoria: string; imagem: string; index: number }) {
   return (
-    <Link href="/acervo" className="group relative block h-72 overflow-hidden md:h-full">
+    <Link href="/diretorio" className="group relative block h-72 overflow-hidden md:h-full">
       <Image
         src={imagem || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop"}
         alt={`${nome} — ${categoria}`}
@@ -59,8 +57,8 @@ function ObraCard({ nome, categoria, imagem, index }: { nome: string; categoria:
         sizes="(max-width: 768px) 100vw, 50vw"
         className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
       />
-      <div className="absolute inset-0 flex flex-col justify-end bg-onix/0 p-6 transition-colors duration-500 group-hover:bg-onix/60 md:p-8">
-        <div className="translate-y-3 opacity-0 transition-all duration-500 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-onix/70 to-transparent p-6 transition-colors duration-500 group-hover:bg-onix/60 md:p-8">
+        <div className="translate-y-0 opacity-100 transition-all duration-500 ease-out md:translate-y-3 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
           <p className="text-[10px] font-light uppercase tracking-[0.4em] text-alabastro/70">
             {categoria}
           </p>
@@ -106,6 +104,8 @@ export default function Page() {
 
   useEffect(() => {
     async function fetchCuradoria() {
+      const supabase = getSupabase()
+      if (!supabase) return
       try {
         const { data, error } = await supabase
           .from('suppliers')
@@ -155,11 +155,11 @@ export default function Page() {
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
             </div>
-            <Link href="/editorial" className="group relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
+            <Link href="/diretorio" className="group relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-onix/20 transition-colors duration-500 group-hover:bg-onix/40" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                <span className="font-serif text-3xl font-light tracking-widest text-alabastro">O EDITORIAL</span>
+                <span className="font-serif text-3xl font-light tracking-widest text-alabastro">EXPLORE O ACERVO</span>
               </div>
             </Link>
             <div className="relative col-span-1 aspect-[4/3] overflow-hidden md:col-span-3 md:row-span-1 md:aspect-auto bg-onix/10">
@@ -184,6 +184,12 @@ export default function Page() {
           </div>
         </div>
       </section>
+
+      <div className="px-5 pb-8 text-center md:hidden">
+        <p className="text-xs uppercase tracking-widest text-bronze">Curadoria Nupcial · Centro-Oeste Mineiro</p>
+        <h1 className="mt-3 font-serif text-4xl">Simplesmente impecável.</h1>
+      </div>
+      <SearchBar />
 
       <section id="acervo" className="scroll-mt-24 px-3 py-20 md:px-4 md:py-28">
         <div className="mx-auto max-w-[1600px]">
@@ -255,7 +261,7 @@ export default function Page() {
             <div className="md:col-span-5">
               <div className="flex items-center gap-4">
                 <Image 
-                  src="/images/divine-seal.png" 
+                  src="/images/divine-seal.webp"
                   alt="Selo DIVINE" 
                   width={96} 
                   height={96} 
@@ -273,15 +279,10 @@ export default function Page() {
             <div className="md:col-span-3 md:col-start-7">
               <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Institucional</p>
               <nav className="flex flex-col gap-4">
-                <Link href="/termos" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                <Link href="/#manifesto" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
                   A Curadoria
                 </Link>
-                <Link href="/privacidade" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  Política de Privacidade
-                </Link>
-                <Link href="/criterios" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  Critérios do Selo
-                </Link>
+                <a href="mailto:divinecuradorianupcial@gmail.com?subject=Privacidade%20e%20dados%20pessoais" className="text-xs text-alabastro/70 hover:text-bronze">Dúvidas sobre privacidade</a>
               </nav>
             </div>
 
@@ -295,10 +296,6 @@ export default function Page() {
                 <a href="https://instagram.com/divinecuradoria" target="_blank" rel="noreferrer" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                   <span>@divinecuradoria</span>
-                </a>
-                <a href="#" className="group flex items-center gap-3 text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-                  <span>Acervo em Vídeo</span>
                 </a>
               </nav>
             </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { Header } from "@/components/Header"
@@ -9,6 +9,8 @@ import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 // Conexão com o cofre
 
 export default function CriarPassaporte() {
+  const [existingUser, setExistingUser] = useState(false)
+  const [checkingUser, setCheckingUser] = useState(true)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<{ msg: string; tipo: "erro" | "sucesso" | "" }>({ msg: "", tipo: "" })
   
@@ -23,6 +25,15 @@ export default function CriarPassaporte() {
     email: "",
     password: ""
   })
+
+  useEffect(() => {
+    const db = getSupabase()
+    if (!db) { setCheckingUser(false); return }
+    db.auth.getUser().then(({ data }) => {
+      setExistingUser(!!data.user)
+      setCheckingUser(false)
+    }).catch(() => setCheckingUser(false))
+  }, [])
 
   // Atualiza os dados conforme o usuário digita
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -80,6 +91,14 @@ export default function CriarPassaporte() {
     <div className="min-h-screen bg-alabastro px-5 pt-32 pb-24 md:pt-40 text-onix">
       <Header />
       <div className="mx-auto max-w-[800px]">
+        {checkingUser ? <p role="status" className="text-center">Carregando seu Passaporte…</p> : existingUser ? (
+          <section className="mx-auto max-w-xl pt-8 text-center">
+            <p className="mb-4 text-[10px] uppercase tracking-[0.4em] text-bronze">Área dos noivos</p>
+            <h1 className="font-serif text-4xl">Seu Passaporte DIVINE</h1>
+            <p className="mt-5 text-base leading-relaxed text-onix/70">Seu acesso está ativo. Continue a organização do casamento pelo Acervo e salve as Referências que combinam com vocês.</p>
+            <Link href="/diretorio" className="mt-8 inline-block rounded-lg bg-onix px-7 py-4 text-sm uppercase tracking-widest text-alabastro">Explorar o Acervo</Link>
+          </section>
+        ) : <>
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
@@ -87,13 +106,13 @@ export default function CriarPassaporte() {
         >
           <div className="mb-16 text-center">
             <p className="mb-4 text-[10px] font-light uppercase tracking-[0.4em] text-bronze">
-              Acesso Privado
+              Para noivos e casais
             </p>
             <h1 className="text-balance font-serif text-4xl font-light leading-tight md:text-5xl lg:text-6xl">
-              Criar Passaporte
+              Criar Passaporte DIVINE
             </h1>
             <p className="mx-auto mt-6 max-w-md text-sm font-light leading-relaxed text-onix/70">
-              Inicie a sua jornada. Crie sua conta para encontrar e salvar os fornecedores do seu casamento.
+              O Passaporte é a área dos casais: crie seu perfil, organize a busca e salve as Referências DIVINE para o seu casamento.
             </p>
           </div>
 
@@ -205,7 +224,7 @@ export default function CriarPassaporte() {
             </p>
 
           </form>
-        </motion.div>
+        </motion.div></>}
       </div>
     </div>
   )

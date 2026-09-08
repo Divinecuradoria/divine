@@ -33,8 +33,10 @@ function LogoGoogle() {
 
 export default function Entrar() {
   const [email, setEmail] = useState("")
+  const [senha, setSenha] = useState("")
   const [carregandoGoogle, setCarregandoGoogle] = useState(false)
   const [carregandoEmail, setCarregandoEmail] = useState(false)
+  const [carregandoSenha, setCarregandoSenha] = useState(false)
   const [enviadoPara, setEnviadoPara] = useState("")
   const [erro, setErro] = useState("")
 
@@ -70,6 +72,21 @@ export default function Entrar() {
     } catch {
       setErro("Não foi possível enviar agora. Confira o e-mail e tente novamente em instantes.")
     } finally { setCarregandoEmail(false) }
+  }
+
+  async function entrarComSenha(e: React.FormEvent) {
+    e.preventDefault()
+    setErro("")
+    setCarregandoSenha(true)
+    try {
+      const supabase = getSupabase()
+      if (!supabase) { setErro(ACCESS_UNAVAILABLE); return }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
+      if (error) throw error
+      window.location.assign(safeNext(new URLSearchParams(window.location.search).get("next")))
+    } catch {
+      setErro("Não foi possível entrar com esses dados. Confira o e-mail e a senha ou use o link mágico.")
+    } finally { setCarregandoSenha(false) }
   }
 
   if (enviadoPara) {
@@ -117,14 +134,14 @@ export default function Entrar() {
         </Link>
 
         <div className="rounded-3xl border border-alabastro/10 bg-alabastro/[0.04] p-8 backdrop-blur">
-          <p className="text-center font-serif text-3xl">O time dos sonhos</p>
+          <p className="text-center font-serif text-3xl">Entrar no DIVINE</p>
           <p className="mt-2 text-center text-sm text-alabastro/60">
-            Acesse seu Passaporte ou sua candidatura à Curadoria. Use o Google ou receba um link por e-mail.
+            Acesso para casais com Passaporte e fornecedores em processo de Curadoria. Use o Google, sua senha ou um link por e-mail.
           </p>
 
           <button
             onClick={entrarComGoogle}
-            disabled={carregandoGoogle || carregandoEmail}
+            disabled={carregandoGoogle || carregandoEmail || carregandoSenha}
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl bg-alabastro py-3.5 text-sm font-medium text-onix transition hover:bg-white disabled:opacity-60"
           >
             {carregandoGoogle ? (
@@ -139,7 +156,7 @@ export default function Entrar() {
             <span className="h-px flex-1 bg-alabastro/15" /> ou <span className="h-px flex-1 bg-alabastro/15" />
           </div>
 
-          <form onSubmit={enviarLinkMagico}>
+          <form onSubmit={entrarComSenha}>
             <label htmlFor="email" className="text-[10px] uppercase tracking-[0.3em] text-alabastro/50">
               Seu melhor e-mail
             </label>
@@ -153,17 +170,27 @@ export default function Entrar() {
               placeholder="seu@email.com"
               className="mt-2 w-full rounded-2xl border border-alabastro/20 bg-transparent px-4 py-3.5 text-sm text-alabastro outline-none transition placeholder:text-alabastro/30 focus:border-bronze"
             />
+            <label htmlFor="senha" className="mt-5 block text-[10px] uppercase tracking-[0.3em] text-alabastro/50">Senha</label>
+            <input id="senha" type="password" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Sua senha" className="mt-2 w-full rounded-2xl border border-alabastro/20 bg-transparent px-4 py-3.5 text-sm text-alabastro outline-none transition placeholder:text-alabastro/30 focus:border-bronze" />
             <button
               type="submit"
-              disabled={carregandoEmail || carregandoGoogle || !email}
+              disabled={carregandoSenha || carregandoGoogle || carregandoEmail || !email || !senha}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-bronze py-3.5 text-sm font-semibold text-alabastro transition hover:bg-bronze/80 disabled:opacity-50"
             >
-              {carregandoEmail ? (
+              {carregandoSenha ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              Receber link mágico
+              Entrar com e-mail e senha
+            </button>
+          </form>
+
+          <div className="my-5 flex items-center gap-4 text-[10px] uppercase tracking-[0.3em] text-alabastro/40"><span className="h-px flex-1 bg-alabastro/15" /> ou <span className="h-px flex-1 bg-alabastro/15" /></div>
+          <form onSubmit={enviarLinkMagico}>
+            <button type="submit" disabled={carregandoEmail || carregandoGoogle || carregandoSenha || !email} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-alabastro/20 py-3.5 text-sm text-alabastro transition hover:border-bronze disabled:opacity-50">
+              {carregandoEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+              Receber link mágico por e-mail
             </button>
           </form>
 

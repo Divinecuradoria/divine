@@ -155,13 +155,10 @@ export default function Page() {
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
             </div>
-            <Link href="/diretorio" className="group relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-onix/20 transition-colors duration-500 group-hover:bg-onix/40" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                <span className="font-serif text-3xl font-light tracking-widest text-alabastro">EXPLORE O ACERVO</span>
-              </div>
-            </Link>
+            <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
+              <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover" />
+              <div className="absolute inset-0 bg-onix/20" />
+            </div>
             <div className="relative col-span-1 aspect-[4/3] overflow-hidden md:col-span-3 md:row-span-1 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop" alt="Detalhe" fill className="object-cover" />
             </div>
@@ -177,7 +174,7 @@ export default function Page() {
                   Curadoria Nupcial · Centro-Oeste Mineiro
                 </p>
                 <h1 className="text-balance font-serif text-5xl font-light leading-[0.98] tracking-tight text-alabastro [text-shadow:0_2px_18px_rgba(0,0,0,0.6)] lg:text-6xl xl:text-7xl">
-                  Simplesmente <span className="italic text-bronze">impecável</span>.
+                  O extraordinário <span className="italic text-bronze">começa na escolha</span>.
                 </h1>
               </motion.div>
             </div>
@@ -187,7 +184,7 @@ export default function Page() {
 
       <div className="px-5 pb-8 text-center md:hidden">
         <p className="text-xs uppercase tracking-widest text-bronze">Curadoria Nupcial · Centro-Oeste Mineiro</p>
-        <h1 className="mt-3 font-serif text-4xl">Simplesmente impecável.</h1>
+        <h1 className="mt-3 font-serif text-4xl">O extraordinário começa na escolha.</h1>
       </div>
       <SearchBar />
 
@@ -303,7 +300,7 @@ export default function Page() {
           </div>
           <div className="mt-20 flex flex-col gap-4 border-t border-alabastro/10 pt-8 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40 sm:flex-row sm:items-center sm:justify-between">
             <span>© {new Date().getFullYear()} DIVINE Curadoria Nupcial</span>
-            <span>Simplesmente impecável</span>
+            <span>O extraordinário começa na escolha</span>
           </div>
         </div>
       </footer>

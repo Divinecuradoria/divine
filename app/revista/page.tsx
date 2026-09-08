@@ -92,7 +92,7 @@ export default function Revista() {
       <section className="px-5 pb-16 pt-36 md:pb-24 md:pt-48">
         <div className="mx-auto max-w-[1200px]">
           <p className="text-[10px] uppercase tracking-[0.4em] text-bronze">Editorial DIVINE</p>
-          <h1 className="mt-5 max-w-4xl font-serif text-5xl font-light leading-[0.95] md:text-7xl">Revista DIVINE</h1>
+          <h1 className="mt-5 max-w-4xl font-serif text-5xl font-light leading-[0.95] md:text-7xl">O Editorial</h1>
           <p className="mt-8 max-w-2xl text-base leading-relaxed text-onix/70 md:text-lg">Notícias, repertório e novidades do universo nupcial. Um espaço para descobrir ideias, profissionais e movimentos que ajudam a construir celebrações com significado.</p>
         </div>
       </section>

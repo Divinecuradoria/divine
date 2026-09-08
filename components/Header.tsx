@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X } from "lucide-react"
+import { BriefcaseBusiness, HeartHandshake, Menu, X } from "lucide-react"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 export function Header() {
@@ -62,8 +62,12 @@ export function Header() {
   const links = <>
     <Link className={linkClass} href="/diretorio">O Acervo</Link>
     <Link className={linkClass} href="/revista">Revista DIVINE</Link>
-    {!isLoggedIn && <Link className={linkClass} href="/passaporte">Passaporte · Para noivos</Link>}
-    {!isLoggedIn && <Link className={linkClass} href="/aplicar">Curadoria · Para fornecedores</Link>}
+    {!isLoggedIn && <Link className={`${linkClass} flex items-center gap-2`} href="/passaporte" title="Passaporte para noivos e casais">
+      <HeartHandshake className="h-4 w-4 shrink-0 text-bronze" aria-hidden="true" /><span>Passaporte</span>
+    </Link>}
+    {!isLoggedIn && <Link className={`${linkClass} flex items-center gap-2`} href="/aplicar" title="Curadoria para fornecedores">
+      <BriefcaseBusiness className="h-4 w-4 shrink-0 text-bronze" aria-hidden="true" /><span>Curadoria</span>
+    </Link>}
     {!isLoggedIn ? <Link className={linkClass} href="/entrar">Entrar</Link> : <>
       <Link className={linkClass} href={panelHref}>{panelLabel}</Link>
       <button className={linkClass} disabled={leaving} onClick={signOut}>{leaving ? "Saindo..." : "Sair da conta"}</button>

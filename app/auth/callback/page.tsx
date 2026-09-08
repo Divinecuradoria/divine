@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+import { safeNext } from "@/lib/curadoria"
 import { getSupabase } from "@/lib/supabase"
 
 export default function PaginaCallback() {
@@ -24,7 +25,7 @@ export default function PaginaCallback() {
       if (encerrado) return
       encerrado = true
       clearTimeout(timer)
-      router.replace("/diretorio")
+      router.replace(safeNext(query.get("next")))
     }
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) entrar()

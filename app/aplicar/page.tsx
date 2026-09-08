@@ -67,13 +67,17 @@ export default function AplicarCuradoria() {
   }
   return <main className="min-h-screen bg-alabastro px-5 pb-24 pt-32 text-onix"><Header />
     <div className="mx-auto max-w-2xl">
-      <p className="text-sm uppercase tracking-widest text-bronze">Curadoria DIVINE</p>
-      <h1 className="mt-3 font-serif text-4xl">Apresente seu trabalho</h1>
-      <p className="mt-5 text-base leading-relaxed">Uma ficha breve, em cerca de cinco minutos. A candidatura dá início à avaliação; a entrada no Acervo depende da decisão da Curadoria.</p>
+      <p className="text-sm uppercase tracking-widest text-bronze">Para fornecedores</p>
+      <h1 className="mt-3 font-serif text-4xl">Solicitar Curadoria DIVINE</h1>
+      <p className="mt-5 text-base leading-relaxed">Esta é a porta de entrada para profissionais do mercado nupcial. Uma ficha breve inicia a avaliação; a entrada no Acervo depende da decisão da Curadoria.</p>
       {error && <p role="alert" className="mt-6 rounded-lg border border-red-300 p-4 text-red-800">{error}</p>}
       {!ready && !error && <p role="status" className="mt-8">Carregando…</p>}
-      {ready && !userId && <div className="mt-8 border-t border-linha pt-6"><p>Entre com Google ou e-mail para enviar e acompanhar sua candidatura.</p>
-        <Link href="/entrar?next=/aplicar" className="mt-5 inline-block rounded-lg bg-onix px-6 py-3 text-alabastro">Continuar com minha conta</Link></div>}
+      {ready && !userId && <div className="mt-8 border-t border-linha pt-6">
+        <h2 className="font-serif text-2xl">Comece pelo seu acesso</h2>
+        <p className="mt-3 leading-relaxed">A primeira etapa é entrar com Google ou e-mail. Depois, você preencherá uma ficha breve com seu portfólio e sua atuação.</p>
+        <p className="mt-3 leading-relaxed">A equipe DIVINE avaliará o material. Se sua marca for selecionada, você receberá um e-mail com um link para ativar o cadastro completo e publicar seu perfil no Acervo.</p>
+        <Link href="/entrar?next=/aplicar" className="mt-6 inline-block rounded-lg bg-onix px-6 py-3 text-alabastro">Entrar para iniciar a candidatura</Link>
+      </div>}
       {application ? <section className="mt-8 border-t border-linha pt-6" aria-live="polite">
         <h2 className="font-serif text-2xl">{STATES[application.status]}</h2>
         <p className="mt-3">Sua ficha foi registrada. Você pode voltar a esta página para acompanhar a decisão.</p>

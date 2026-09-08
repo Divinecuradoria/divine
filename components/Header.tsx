@@ -9,6 +9,8 @@ import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 export function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [panelHref, setPanelHref] = useState("/passaporte")
+  const [panelLabel, setPanelLabel] = useState("Meu painel")
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState("")
   const [leaving, setLeaving] = useState(false)
@@ -19,9 +21,22 @@ export function Header() {
   useEffect(() => {
     const supabase = getSupabase()
     if (!supabase) return
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session)
-    })
+    const db = supabase
+    async function syncUser() {
+      const { data: auth } = await db.auth.getUser()
+      const user = auth.user
+      setIsLoggedIn(!!user)
+      if (!user) { setPanelHref("/passaporte"); setPanelLabel("Meu painel"); return }
+      const reviewer = await db.rpc("divine_is_reviewer")
+      if (reviewer.data === true) { setPanelHref("/curadoria"); setPanelLabel("Curadoria") ; return }
+      const profile = await db.from("profiles").select("role").eq("id", user.id).maybeSingle()
+      if (profile.data?.role === "supplier") { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
+      const application = await db.from("divine_applications").select("id").eq("user_id", user.id).maybeSingle()
+      if (application.data) { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
+      setPanelHref("/passaporte"); setPanelLabel("Meu Passaporte")
+    }
+    syncUser().catch(() => setIsLoggedIn(false))
+    const { data } = supabase.auth.onAuthStateChange(() => { syncUser().catch(() => undefined) })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -47,10 +62,12 @@ export function Header() {
   const links = <>
     <Link className={linkClass} href="/diretorio">O Acervo</Link>
     <Link className={linkClass} href="/#manifesto">O Manifesto</Link>
-    <Link className={linkClass} href="/aplicar">Solicitar Curadoria</Link>
-    {!isLoggedIn && <Link className={linkClass} href="/passaporte">Criar Passaporte</Link>}
-    {!isLoggedIn ? <Link className={linkClass} href="/entrar">Entrar</Link> :
-      <button className={linkClass} disabled={leaving} onClick={signOut}>{leaving ? "Saindo..." : "Sair da conta"}</button>}
+    {!isLoggedIn && <Link className={linkClass} href="/passaporte">Passaporte · Para noivos</Link>}
+    {!isLoggedIn && <Link className={linkClass} href="/aplicar">Curadoria · Para fornecedores</Link>}
+    {!isLoggedIn ? <Link className={linkClass} href="/entrar">Entrar</Link> : <>
+      <Link className={linkClass} href={panelHref}>{panelLabel}</Link>
+      <button className={linkClass} disabled={leaving} onClick={signOut}>{leaving ? "Saindo..." : "Sair da conta"}</button>
+    </>}
   </>
 
   return (

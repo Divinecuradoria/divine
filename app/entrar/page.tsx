@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, Loader2, MailCheck, Sparkles } from "lucide-react"
+import { safeNext } from "@/lib/curadoria"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 
@@ -45,7 +46,7 @@ export default function Entrar() {
       if (!supabase) { setErro(ACCESS_UNAVAILABLE); return }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext(new URLSearchParams(window.location.search).get("next")))}` },
       })
       if (error) throw error
     } catch {
@@ -62,7 +63,7 @@ export default function Entrar() {
       if (!supabase) { setErro(ACCESS_UNAVAILABLE); return }
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext(new URLSearchParams(window.location.search).get("next")))}` },
       })
       if (error) throw error
       setEnviadoPara(email.trim())
@@ -118,7 +119,7 @@ export default function Entrar() {
         <div className="rounded-3xl border border-alabastro/10 bg-alabastro/[0.04] p-8 backdrop-blur">
           <p className="text-center font-serif text-3xl">O time dos sonhos</p>
           <p className="mt-2 text-center text-sm text-alabastro/60">
-            Entre para salvar seus fornecedores favoritos. Use o Google ou receba um link de acesso por e-mail.
+            Acesse seu Passaporte ou sua candidatura à Curadoria. Use o Google ou receba um link por e-mail.
           </p>
 
           <button
@@ -149,7 +150,7 @@ export default function Entrar() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="noiva@email.com"
+              placeholder="seu@email.com"
               className="mt-2 w-full rounded-2xl border border-alabastro/20 bg-transparent px-4 py-3.5 text-sm text-alabastro outline-none transition placeholder:text-alabastro/30 focus:border-bronze"
             />
             <button

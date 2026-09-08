@@ -15,6 +15,7 @@ export default function PaginaCallback() {
     const supabase = getSupabase()
     const query = new URLSearchParams(window.location.search)
     const hash = new URLSearchParams(window.location.hash.slice(1))
+    const destination = safeNext(query.get("next"))
     if (!supabase || query.has("error") || hash.has("error")) {
       setFalhou(true)
       return
@@ -25,7 +26,7 @@ export default function PaginaCallback() {
       if (encerrado) return
       encerrado = true
       clearTimeout(timer)
-      router.replace(safeNext(query.get("next")))
+      router.replace(destination)
     }
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) entrar()
@@ -33,6 +34,25 @@ export default function PaginaCallback() {
     timer = setTimeout(() => {
       if (!encerrado) { encerrado = true; setFalhou(true) }
     }, 15000)
+    const code = query.get("code")
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (encerrado) return
+        if (error) {
+          encerrado = true
+          clearTimeout(timer)
+          setFalhou(true)
+          return
+        }
+        entrar()
+      }).catch(() => {
+        if (!encerrado) {
+          encerrado = true
+          clearTimeout(timer)
+          setFalhou(true)
+        }
+      })
+    }
     supabase.auth.getSession().then(({ data, error }) => {
       if (encerrado) return
       if (data.session) entrar()

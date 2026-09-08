@@ -3,12 +3,8 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronDown, MapPin, Search, Sparkles } from "lucide-react"
-import { createClient } from "@supabase/supabase-js"
+import { getSupabase } from "@/lib/supabase"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-)
 
 type Opcao = { value: string; label: string }
 
@@ -58,6 +54,7 @@ function CampoSelecao({
     <div className="relative flex-1">
       <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-bronze">{icone}</span>
       <select
+        aria-label={placeholder}
         value={valor}
         onChange={(e) => aoSelecionar(e.target.value)}
         className="w-full appearance-none rounded-2xl border border-transparent bg-transparent py-4 pl-11 pr-9 text-sm font-medium text-onix outline-none transition hover:border-linha focus:border-bronze"
@@ -83,6 +80,8 @@ export default function SearchBar() {
 
   useEffect(() => {
     async function carregar() {
+      const supabase = getSupabase()
+      if (!supabase) return
       const [cats, cts] = await Promise.all([
         supabase.from("categories").select("name, slug").order("name"),
         supabase.from("cities").select("name, state, slug").order("name"),
@@ -94,7 +93,7 @@ export default function SearchBar() {
         setCidades(cts.data.map((c) => ({ value: c.slug, label: `${c.name}, ${c.state}` })))
       }
     }
-    carregar()
+    carregar().catch(() => { /* Keep the local search options available. */ })
   }, [])
 
   function buscar() {
@@ -113,7 +112,7 @@ export default function SearchBar() {
       <div className="flex flex-col gap-2 rounded-3xl border border-linha bg-white/95 p-2 shadow-[0_30px_80px_-40px_rgba(18,18,18,0.35)] backdrop-blur sm:flex-row sm:items-center">
         <CampoSelecao
           icone={<Sparkles className="h-4 w-4" />}
-          placeholder="Categoria de nicho"
+          placeholder="Tipo de fornecedor"
           valor={categoria}
           opcoes={categorias}
           aoSelecionar={setCategoria}
@@ -121,7 +120,7 @@ export default function SearchBar() {
         <div className="hidden h-8 w-px bg-linha sm:block" />
         <CampoSelecao
           icone={<MapPin className="h-4 w-4" />}
-          placeholder="Cidade polo"
+          placeholder="Cidade"
           valor={cidade}
           opcoes={cidades}
           aoSelecionar={setCidade}

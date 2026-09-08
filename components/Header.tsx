@@ -61,7 +61,7 @@ export function Header() {
   const linkClass = "block rounded px-2 py-3 text-xs uppercase tracking-widest text-onix/80 hover:text-bronze focus-visible:outline-2 focus-visible:outline-bronze"
   const links = <>
     <Link className={linkClass} href="/diretorio">O Acervo</Link>
-    <Link className={linkClass} href="/#manifesto">O Manifesto</Link>
+    <Link className={linkClass} href="/revista">Revista DIVINE</Link>
     {!isLoggedIn && <Link className={linkClass} href="/passaporte">Passaporte · Para noivos</Link>}
     {!isLoggedIn && <Link className={linkClass} href="/aplicar">Curadoria · Para fornecedores</Link>}
     {!isLoggedIn ? <Link className={linkClass} href="/entrar">Entrar</Link> : <>

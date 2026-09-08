@@ -49,6 +49,10 @@ Próxima entrega, após inspecionar o esquema real: criar vínculo único entre 
 | 4 | Seleção assistida para casais piloto | Perfil, critérios de compatibilidade e justificativas | Opções pertinentes; lacunas claramente sinalizadas |
 | 5 | Convites de parceiros aos próprios clientes | Origem e eventos de conversão | Separar cadastro, clique, conversa confirmada e contratação informada |
 
+## Revista DIVINE
+
+O manifesto permanece na página inicial. A área editorial própria usa o nome **Revista DIVINE** e reúne notícias, novidades do mercado nupcial e matérias organizadas por segmento. Conteúdo comercial de fornecedores cadastrados entra como **Conteúdo patrocinado**, com identificação visível e regras editoriais próprias. Patrocínio compra distribuição e espaço; não compra chancela, posição na seleção ou aprovação.
+
 ## Radar — contrato de informação
 
 Uma identidade por profissional, com múltiplas categorias e áreas de atuação. Registrar nome, cidade-base, categoria, serviços, territórios declarados, evidências com URL e data, presença digital, pendências e próxima ação. Mérito permanece sem nota quando não verificado. Valor estratégico ordena os convites, sem alterar a aprovação. Prioridade A/B/C e marcação independente de possível Joia Oculta.

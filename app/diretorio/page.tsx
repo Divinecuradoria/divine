@@ -80,6 +80,22 @@ function normalizaCategorias(c: Fornecedor["categories"]): CategoriaRef[] {
   return Array.isArray(c) ? c : [c]
 }
 
+function normalizaTexto(valor: string | null | undefined): string {
+  return (valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
+function fornecedorNoLocal(fornecedor: Fornecedor, localInformado: string): boolean {
+  const cidade = normalizaTexto(fornecedor.city?.name)
+  const local = normalizaTexto(localInformado)
+  if (!cidade || !local) return false
+  return local === cidade || local.includes(cidade) || cidade.includes(local)
+}
+
 function formataFaixa(f: Fornecedor): string {
   if (f.price_min != null && f.price_max != null) {
     return `R$ ${(f.price_min / 1000).toFixed(0)}–${(f.price_max / 1000).toFixed(0)} mil`
@@ -235,6 +251,7 @@ function Diretorio() {
   const [erro, setErro] = useState(false)
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
+  const [passaporte, setPassaporte] = useState<{ local: string } | null>(null)
   const [aviso, setAviso] = useState("")
   const pendingFavorites = useRef(new Set<string>())
   const [filtros, setFiltros] = useState<Filtros>({
@@ -274,7 +291,22 @@ function Diretorio() {
     const supabase = getSupabase()
     if (!supabase) return
     supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return
+      if (!data.user) {
+        setPassaporte(null)
+        return
+      }
+      const { data: perfil } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle()
+      const ehNoivo = perfil?.role === "couple" || data.user.user_metadata?.role === "couple"
+      if (!ehNoivo) {
+        setPassaporte(null)
+        setFavoritos(new Set())
+        return
+      }
+      setPassaporte({ local: String(data.user.user_metadata?.location || "") })
       const { data: favs } = await supabase
         .from("favorites")
         .select("supplier_id")
@@ -302,8 +334,47 @@ function Diretorio() {
         if (filtros.soComAgenda && !f.agenda_aberta) return false
         return faixaSel.teste(f)
       })
-      .sort((a, b) => Number(b.has_divine_seal) - Number(a.has_divine_seal))
-  }, [fornecedores, filtros])
+      .sort((a, b) => {
+        // Para casais logados, interesses salvos vêm primeiro; em seguida,
+        // priorizamos referências na cidade informada no Passaporte.
+        if (passaporte) {
+          const favoritoA = favoritos.has(a.id) ? 1 : 0
+          const favoritoB = favoritos.has(b.id) ? 1 : 0
+          if (favoritoA !== favoritoB) return favoritoB - favoritoA
+
+          const localA = fornecedorNoLocal(a, passaporte.local) ? 1 : 0
+          const localB = fornecedorNoLocal(b, passaporte.local) ? 1 : 0
+          if (localA !== localB) return localB - localA
+        }
+
+        return a.business_name.localeCompare(b.business_name, "pt-BR")
+      })
+  }, [fornecedores, filtros, favoritos, passaporte])
+
+  const grupos = useMemo(() => {
+    if (passaporte) {
+      return [{ key: "selecao", label: "Seleção para você", items: lista }]
+    }
+
+    const porCategoria = new Map<string, { key: string; label: string; items: Fornecedor[] }>()
+    for (const fornecedor of lista) {
+      const categoriasDoFornecedor = normalizaCategorias(fornecedor.categories)
+      const categoriasParaExibir = categoriasDoFornecedor.length
+        ? categoriasDoFornecedor
+        : [{ slug: "sem-categoria", name: "Outras referências" }]
+
+      for (const categoria of categoriasParaExibir) {
+        const key = categoria.slug || normalizaTexto(categoria.name)
+        const grupo = porCategoria.get(key) || { key, label: categoria.name, items: [] }
+        grupo.items.push(fornecedor)
+        porCategoria.set(key, grupo)
+      }
+    }
+
+    return Array.from(porCategoria.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, "pt-BR")
+    )
+  }, [lista, passaporte])
 
   function limparFiltros() {
     setFiltros({ categoria: "", cidade: "", faixa: "", estilo: "", soComAgenda: false })
@@ -360,7 +431,11 @@ function Diretorio() {
           <div>
             <h1 className="font-serif text-4xl sm:text-5xl">O Acervo</h1>
             <p className="mt-2 text-sm text-onix/50">
-              {carregando ? "Abrindo o acervo..." : `${lista.length} fornecedores encontrados`}
+              {carregando
+                ? "Abrindo o acervo..."
+                : passaporte
+                  ? "Sua seleção começa pelos seus interesses e pelo território do Passaporte."
+                  : `${lista.length} fornecedores encontrados`}
             </p>
           </div>
           <button
@@ -509,16 +584,27 @@ function Diretorio() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {lista.map((f, i) => (
-                  <CartaoFornecedor
-                    key={f.id}
-                    fornecedor={f}
-                    indice={i}
-                    salvo={favoritos.has(f.id)}
-                    aoFavoritar={alternarFavorito}
-                    aoChamar={registrarClique}
-                  />
+              <div className="space-y-12">
+                {grupos.map((grupo) => (
+                  <section key={grupo.key} aria-labelledby={`grupo-${grupo.key}`}>
+                    {!passaporte && (
+                      <h2 id={`grupo-${grupo.key}`} className="mb-5 font-serif text-2xl">
+                        {grupo.label}
+                      </h2>
+                    )}
+                    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                      {grupo.items.map((f, i) => (
+                        <CartaoFornecedor
+                          key={`${grupo.key}-${f.id}`}
+                          fornecedor={f}
+                          indice={i}
+                          salvo={favoritos.has(f.id)}
+                          aoFavoritar={alternarFavorito}
+                          aoChamar={registrarClique}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             )}

@@ -1,0 +1,2 @@
+[functions.notify-supplier-lead]
+verify_jwt = false

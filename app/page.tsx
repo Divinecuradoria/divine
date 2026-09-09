@@ -153,7 +153,7 @@ export default function Page() {
         <div className="mx-auto max-w-[1600px]">
           <div className="grid grid-cols-2 gap-2 md:h-[82vh] md:grid-cols-12 md:grid-rows-2">
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="/images/hero-portrait.webp" alt="Noiva com buquê" fill priority sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
+              <Image src="https://images.unsplash.com/photo-1710090411838-5f846e289b2e?auto=format&fit=crop&w=1800&q=88" alt="Noiva em retrato editorial" fill priority sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
             </div>
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
               <Image src="/images/hero-ambience.webp" alt="Celebração de casamento" fill priority sizes="(max-width: 768px) 50vw, 50vw" className="object-cover grayscale brightness-75" />

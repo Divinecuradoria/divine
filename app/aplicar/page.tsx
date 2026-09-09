@@ -71,7 +71,9 @@ export default function AplicarCuradoria() {
     try {
       const db = getSupabase()
       if (!db) throw new Error()
+      const leadId = crypto.randomUUID()
       const { error: leadError } = await db.from("divine_supplier_leads").insert({
+        id: leadId,
         brand_name: text("lead_brand_name"),
         contact_name: text("lead_contact_name"),
         email: text("lead_email").toLowerCase(),

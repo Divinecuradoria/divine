@@ -44,7 +44,10 @@ export default function CuradoriaInteresses() {
       setLeads((result.data ?? []) as Lead[])
       setLoading(false)
     }
-    load().catch(() => { setError("Esta área é exclusiva da Curadoria DIVINE  async function updateStatus(id: string, status: Lead["status"]) {
+    load().catch(() => { setError("Esta área é exclusiva da Curadoria DIVINE."); setLoading(false) })
+  }, [])
+
+  async function updateStatus(id: string, status: Lead["status"]) {
     const db = getSupabase()
     if (!db) return
     const currentLead = leads.find(lead => lead.id === id)

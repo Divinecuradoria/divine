@@ -29,13 +29,19 @@ export function Header() {
       if (!user) { setPanelHref("/passaporte"); setPanelLabel("Meu painel"); return }
       const reviewer = await db.rpc("divine_is_reviewer")
       if (reviewer.data === true) { setPanelHref("/curadoria"); setPanelLabel("Curadoria") ; return }
-      // /aplicar é o espaço de fornecedores. Isso mantém o menu correto
-      // imediatamente após o envio da ficha completa.
-      if (pathname === "/aplicar") { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
+      const supplier = await db.from("suppliers").select("id").eq("owner_user_id", user.id).eq("is_active", true).maybeSingle()
+      if (supplier.data) { setPanelHref("/painel/fornecedor"); setPanelLabel("Meu painel"); return }
+      // /aplicar é o espaço de candidatura. Isso evita chamar a área de
+      // configuração de um fornecedor que ainda não foi publicado.
+      if (pathname === "/aplicar") { setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return }
       const profile = await db.from("profiles").select("role").eq("id", user.id).maybeSingle()
-      if (profile.data?.role === "supplier") { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
+      if (profile.data?.role === "supplier") {
+        setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return
+      }
       const application = await db.from("divine_applications").select("id").eq("user_id", user.id).maybeSingle()
-      if (application.data) { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
+      if (application.data) {
+        setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return
+      }
       setPanelHref("/passaporte"); setPanelLabel("Meu Passaporte")
     }
     syncUser().catch(() => setIsLoggedIn(false))

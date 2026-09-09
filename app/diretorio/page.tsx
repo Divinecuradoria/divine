@@ -255,7 +255,8 @@ function Diretorio() {
           .select(
             "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city(name, state, slug), categories(name, slug)"
           )
-          .eq("is_active", true),
+          .eq("is_active", true)
+          .eq("has_divine_seal", true),
         supabase.from("categories").select("name, slug").order("name"),
         supabase.from("cities").select("name, state, slug").order("name"),
       ])

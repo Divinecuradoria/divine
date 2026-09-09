@@ -71,7 +71,9 @@ export default function AplicarCuradoria() {
     try {
       const db = getSupabase()
       if (!db) throw new Error()
+      const leadId = crypto.randomUUID()
       const { error: leadError } = await db.from("divine_supplier_leads").insert({
+        id: leadId,
         brand_name: text("lead_brand_name"),
         contact_name: text("lead_contact_name"),
         email: text("lead_email").toLowerCase(),
@@ -81,6 +83,12 @@ export default function AplicarCuradoria() {
         notes: text("lead_notes"),
       })
       if (leadError) throw leadError
+      const { error: notificationError } = await db.functions.invoke("notify-supplier-lead", {
+        body: { lead_id: leadId },
+      })
+      if (notificationError) {
+        setError("Os dados foram registrados, mas o aviso por e-mail ainda está sendo configurado. A Curadoria poderá consultar sua inscrição no painel.")
+      }
       setLeadSent(true)
     } catch {
       setError("Não foi possível enviar seus dados agora. Confira as informações e tente novamente.")

@@ -17,6 +17,7 @@ type Lead = {
   status: "new" | "contacted" | "invited" | "archived"
   created_at: string
   notification_sent_at: string | null
+  invitation_sent_at: string | null
 }
 
 const labels: Record<Lead["status"], string> = {
@@ -43,16 +44,31 @@ export default function CuradoriaInteresses() {
       setLeads((result.data ?? []) as Lead[])
       setLoading(false)
     }
-    load().catch(() => { setError("Esta área é exclusiva da Curadoria DIVINE."); setLoading(false) })
-  }, [])
-
-  async function updateStatus(id: string, status: Lead["status"]) {
+    load().catch(() => { setError("Esta área é exclusiva da Curadoria DIVINE  async function updateStatus(id: string, status: Lead["status"]) {
     const db = getSupabase()
     if (!db) return
+    const currentLead = leads.find(lead => lead.id === id)
+    setError("")
     setMessage("")
     const result = await db!.from("divine_supplier_leads").update({ status }).eq("id", id)
     if (result.error) { setError("Não foi possível atualizar o status."); return }
+
     setLeads(current => current.map(lead => lead.id === id ? { ...lead, status } : lead))
+
+    if (status === "invited" && currentLead?.status !== "invited") {
+      const invitation = await db.functions.invoke("notify-supplier-invitation", {
+        body: { lead_id: id },
+      })
+
+      if (invitation.error) {
+        setError("O status foi atualizado, mas não foi possível enviar o convite por e-mail. Confira a configuração do Resend.")
+        return
+      }
+
+      setMessage("Convite enviado por e-mail e status atualizado.")
+      return
+    }
+
     setMessage("Status atualizado.")
   }
 

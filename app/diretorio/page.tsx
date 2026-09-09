@@ -358,7 +358,7 @@ function Diretorio() {
 
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-serif text-4xl sm:text-5xl">O Diretório</h1>
+            <h1 className="font-serif text-4xl sm:text-5xl">O Acervo</h1>
             <p className="mt-2 text-sm text-onix/50">
               {carregando ? "Abrindo o acervo..." : `${lista.length} fornecedores encontrados`}
             </p>

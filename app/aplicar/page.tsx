@@ -10,6 +10,8 @@ export default function AplicarCuradoria() {
   const [userId, setUserId] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [leadBusy, setLeadBusy] = useState(false)
+  const [leadSent, setLeadSent] = useState(false)
   const [error, setError] = useState("")
   const [application, setApplication] = useState<{ id: string; status: string } | null>(null)
   useEffect(() => {
@@ -59,6 +61,34 @@ export default function AplicarCuradoria() {
     finally { setBusy(false) }
   }
 
+  async function submitLead(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (leadBusy) return
+    setLeadBusy(true)
+    setError("")
+    const values = new FormData(event.currentTarget)
+    const text = (key: string) => String(values.get(key) || "").trim()
+    try {
+      const db = getSupabase()
+      if (!db) throw new Error()
+      const { error: leadError } = await db.from("divine_supplier_leads").insert({
+        brand_name: text("lead_brand_name"),
+        contact_name: text("lead_contact_name"),
+        email: text("lead_email").toLowerCase(),
+        category: text("lead_category"),
+        base_city: text("lead_base_city"),
+        portfolio_url: text("lead_portfolio_url"),
+        notes: text("lead_notes"),
+      })
+      if (leadError) throw leadError
+      setLeadSent(true)
+    } catch {
+      setError("Não foi possível enviar seus dados agora. Confira as informações e tente novamente.")
+    } finally {
+      setLeadBusy(false)
+    }
+  }
+
   function input(name: string, label: string, type = "text", maxLength = 160) {
     return <label className="block text-sm" key={name}>{label}<input name={name} type={type} required maxLength={maxLength}
       min={type === "number" ? 0 : undefined} max={name === "years_active" ? 150 : type === "number" ? 100000 : undefined}
@@ -72,14 +102,42 @@ export default function AplicarCuradoria() {
       <p className="mt-5 text-base leading-relaxed">Esta é a porta de entrada para profissionais do mercado nupcial. Uma ficha breve inicia a avaliação; a entrada no Acervo depende da decisão da Curadoria.</p>
       {error && <p role="alert" className="mt-6 rounded-lg border border-red-300 p-4 text-red-800">{error}</p>}
       {!ready && !error && <p role="status" className="mt-8">Carregando…</p>}
-      {ready && !userId && <div className="mt-8 border-t border-linha pt-6">
-        <h2 className="font-serif text-2xl">Comece pelo seu acesso</h2>
-        <p className="mt-3 leading-relaxed">A primeira etapa é entrar com seu e-mail. Depois, você preencherá uma ficha breve com seu portfólio e sua atuação.</p>
-        <p className="mt-3 leading-relaxed">A equipe DIVINE avaliará o material. Se sua marca for selecionada, você receberá um e-mail com um link para ativar o cadastro completo e publicar seu perfil no Acervo.</p>
-        <Link href="/entrar?next=/aplicar" className="mt-6 inline-flex items-center justify-center rounded-lg bg-onix px-6 py-3 text-sm text-alabastro">
-          Entrar com e-mail
-        </Link>
-      </div>}
+      {ready && !userId && (leadSent ? <section className="mt-8 border-t border-linha pt-6" aria-live="polite">
+        <p className="text-sm uppercase tracking-widest text-bronze">Recebemos seu interesse</p>
+        <h2 className="mt-3 font-serif text-3xl">A Curadoria começa pela escuta.</h2>
+        <p className="mt-4 leading-relaxed">A equipe DIVINE analisará as informações e, se houver aderência ao próximo ciclo, entrará em contato por e-mail para a ficha completa.</p>
+      </section> : <div className="mt-8 grid gap-10 border-t border-linha pt-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <form onSubmit={submitLead} className="space-y-5">
+          <div>
+            <h2 className="font-serif text-2xl">Apresente seu trabalho</h2>
+            <p className="mt-3 leading-relaxed">Deixe seus dados básicos para a primeira análise da Curadoria DIVINE. Leva menos de dois minutos.</p>
+          </div>
+          {input("lead_brand_name", "Nome da marca ou profissional")}
+          {input("lead_contact_name", "Nome para contato")}
+          {input("lead_email", "E-mail", "email")}
+          <label className="block text-sm">Categoria principal<select name="lead_category" required defaultValue="" className={fieldClass}>
+            <option value="" disabled>Selecione a categoria</option>{CATEGORIES.map(c => <option key={c}>{c}</option>)}
+          </select></label>
+          {input("lead_base_city", "Cidade-base")}
+          {input("lead_portfolio_url", "Instagram, site ou portfólio (https://)", "url", 2000)}
+          <label className="block text-sm">Apresente brevemente sua assinatura (opcional)<textarea name="lead_notes" maxLength={500} rows={3} className={fieldClass} /></label>
+          <button type="submit" disabled={leadBusy} className="w-full rounded-lg bg-onix px-6 py-4 text-alabastro disabled:opacity-60">
+            {leadBusy ? "Enviando…" : "Enviar para avaliação inicial"}
+          </button>
+          <p className="text-xs leading-relaxed text-onix/60">O envio dos dados não garante a entrada no Acervo. A composição é editorial e depende da análise da Curadoria.</p>
+        </form>
+        <aside className="border-linha bg-onix px-6 py-7 text-alabastro lg:border-l lg:pl-8">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-bronze">Como funciona</p>
+          <ol className="mt-5 space-y-5 text-sm leading-relaxed text-alabastro/75">
+            <li><strong className="text-alabastro">01 · Apresentação.</strong><br />Você compartilha os dados essenciais do seu trabalho.</li>
+            <li><strong className="text-alabastro">02 · Pré-análise.</strong><br />A DIVINE observa portfólio, identidade, reputação e atuação.</li>
+            <li><strong className="text-alabastro">03 · Convite à Curadoria.</strong><br />Se houver aderência, você recebe o convite para a ficha completa.</li>
+            <li><strong className="text-alabastro">04 · Deliberação.</strong><br />A decisão editorial define a entrada como Referência DIVINE.</li>
+          </ol>
+          <p className="mt-7 border-t border-alabastro/15 pt-5 text-xs leading-relaxed text-alabastro/50">A chancela não é comprada. A visibilidade e os serviços comerciais são tratados separadamente.</p>
+          <Link href="/entrar?next=/aplicar" className="mt-6 inline-flex text-sm text-bronze underline underline-offset-4">Já tenho uma conta</Link>
+        </aside>
+      </div>)}
       {application ? <section className="mt-8 border-t border-linha pt-6" aria-live="polite">
         <h2 className="font-serif text-2xl">{STATES[application.status]}</h2>
         <p className="mt-3">Sua ficha foi registrada. Você pode voltar a esta página para acompanhar a decisão.</p>

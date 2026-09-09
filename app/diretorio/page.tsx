@@ -295,6 +295,17 @@ function Diretorio() {
         setPassaporte(null)
         return
       }
+      const { data: perfil } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle()
+      const ehNoivo = perfil?.role === "couple" || data.user.user_metadata?.role === "couple"
+      if (!ehNoivo) {
+        setPassaporte(null)
+        setFavoritos(new Set())
+        return
+      }
       setPassaporte({ local: String(data.user.user_metadata?.location || "") })
       const { data: favs } = await supabase
         .from("favorites")

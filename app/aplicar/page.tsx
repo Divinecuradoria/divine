@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
 import { Header } from "@/components/Header"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
-import { CATEGORIES, STATES, fieldClass, safeNext } from "@/lib/curadoria"
+import { CATEGORIES, STATES, fieldClass } from "@/lib/curadoria"
 
 export default function AplicarCuradoria() {
   const [userId, setUserId] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [googleBusy, setGoogleBusy] = useState(false)
   const [error, setError] = useState("")
   const [application, setApplication] = useState<{ id: string; status: string } | null>(null)
   useEffect(() => {
@@ -61,26 +59,6 @@ export default function AplicarCuradoria() {
     finally { setBusy(false) }
   }
 
-  async function continueWithGoogle() {
-    setError("")
-    setGoogleBusy(true)
-    try {
-      const db = getSupabase()
-      if (!db) { setError(ACCESS_UNAVAILABLE); return }
-      const { error: authError } = await db.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext("/aplicar"))}`,
-        },
-      })
-      if (authError) throw authError
-    } catch {
-      setError("Não foi possível entrar com o Google. Tente novamente ou use seu e-mail.")
-    } finally {
-      setGoogleBusy(false)
-    }
-  }
-
   function input(name: string, label: string, type = "text", maxLength = 160) {
     return <label className="block text-sm" key={name}>{label}<input name={name} type={type} required maxLength={maxLength}
       min={type === "number" ? 0 : undefined} max={name === "years_active" ? 150 : type === "number" ? 100000 : undefined}
@@ -96,17 +74,11 @@ export default function AplicarCuradoria() {
       {!ready && !error && <p role="status" className="mt-8">Carregando…</p>}
       {ready && !userId && <div className="mt-8 border-t border-linha pt-6">
         <h2 className="font-serif text-2xl">Comece pelo seu acesso</h2>
-        <p className="mt-3 leading-relaxed">A primeira etapa é entrar com Google ou e-mail. Depois, você preencherá uma ficha breve com seu portfólio e sua atuação.</p>
+        <p className="mt-3 leading-relaxed">A primeira etapa é entrar com seu e-mail. Depois, você preencherá uma ficha breve com seu portfólio e sua atuação.</p>
         <p className="mt-3 leading-relaxed">A equipe DIVINE avaliará o material. Se sua marca for selecionada, você receberá um e-mail com um link para ativar o cadastro completo e publicar seu perfil no Acervo.</p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <button type="button" onClick={continueWithGoogle} disabled={googleBusy} className="inline-flex items-center justify-center gap-2 rounded-lg bg-onix px-5 py-3 text-sm text-alabastro disabled:opacity-60">
-            {googleBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-            Continuar com o Google
-          </button>
-          <Link href="/entrar?next=/aplicar" className="inline-flex items-center justify-center rounded-lg border border-onix/20 px-5 py-3 text-sm text-onix transition hover:border-bronze">
-            Entrar com e-mail
-          </Link>
-        </div>
+        <Link href="/entrar?next=/aplicar" className="mt-6 inline-flex items-center justify-center rounded-lg bg-onix px-6 py-3 text-sm text-alabastro">
+          Entrar com e-mail
+        </Link>
       </div>}
       {application ? <section className="mt-8 border-t border-linha pt-6" aria-live="polite">
         <h2 className="font-serif text-2xl">{STATES[application.status]}</h2>
@@ -138,5 +110,3 @@ export default function AplicarCuradoria() {
     </div>
   </main>
 }
-
-        

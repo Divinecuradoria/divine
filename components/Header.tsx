@@ -29,6 +29,9 @@ export function Header() {
       if (!user) { setPanelHref("/passaporte"); setPanelLabel("Meu painel"); return }
       const reviewer = await db.rpc("divine_is_reviewer")
       if (reviewer.data === true) { setPanelHref("/curadoria"); setPanelLabel("Curadoria") ; return }
+      // /aplicar é o espaço de fornecedores. Isso mantém o menu correto
+      // imediatamente após o envio da ficha completa.
+      if (pathname === "/aplicar") { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
       const profile = await db.from("profiles").select("role").eq("id", user.id).maybeSingle()
       if (profile.data?.role === "supplier") { setPanelHref("/aplicar"); setPanelLabel("Meu painel"); return }
       const application = await db.from("divine_applications").select("id").eq("user_id", user.id).maybeSingle()
@@ -38,7 +41,7 @@ export function Header() {
     syncUser().catch(() => setIsLoggedIn(false))
     const { data } = supabase.auth.onAuthStateChange(() => { syncUser().catch(() => undefined) })
     return () => data.subscription.unsubscribe()
-  }, [])
+  }, [pathname])
 
   async function signOut() {
     setLeaving(true)

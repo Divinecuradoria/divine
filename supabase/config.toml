@@ -1,2 +1,5 @@
 [functions.notify-supplier-lead]
 verify_jwt = false
+
+[functions.notify-supplier-invitation]
+verify_jwt = true

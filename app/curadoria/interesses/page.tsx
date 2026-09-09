@@ -36,9 +36,9 @@ export default function CuradoriaInteresses() {
     const db = getSupabase()
     if (!db) { setError(ACCESS_UNAVAILABLE); setLoading(false); return }
     async function load() {
-      const reviewer = await db.rpc("divine_is_reviewer")
+      const reviewer = await db!.rpc("divine_is_reviewer")
       if (reviewer.error || reviewer.data !== true) throw new Error("restricted")
-      const result = await db.from("divine_supplier_leads").select("id,brand_name,contact_name,email,category,base_city,portfolio_url,notes,status,created_at,notification_sent_at").order("created_at", { ascending: false })
+      const result = await db!.from("divine_supplier_leads").select("id,brand_name,contact_name,email,category,base_city,portfolio_url,notes,status,created_at,notification_sent_at").order("created_at", { ascending: false })
       if (result.error) throw result.error
       setLeads((result.data ?? []) as Lead[])
       setLoading(false)
@@ -50,7 +50,7 @@ export default function CuradoriaInteresses() {
     const db = getSupabase()
     if (!db) return
     setMessage("")
-    const result = await db.from("divine_supplier_leads").update({ status }).eq("id", id)
+    const result = await db!.from("divine_supplier_leads").update({ status }).eq("id", id)
     if (result.error) { setError("Não foi possível atualizar o status."); return }
     setLeads(current => current.map(lead => lead.id === id ? { ...lead, status } : lead))
     setMessage("Status atualizado.")

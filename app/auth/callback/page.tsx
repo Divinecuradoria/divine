@@ -35,28 +35,25 @@ export default function PaginaCallback() {
       if (!encerrado) { encerrado = true; setFalhou(true) }
     }, 15000)
     const code = query.get("code")
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (encerrado) return
-        if (error) {
-          encerrado = true
-          clearTimeout(timer)
-          setFalhou(true)
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (encerrado) return
+      if (data.session) {
+        entrar()
+        return
+      }
+      if (error) throw error
+      if (!code) throw new Error("Sessão OAuth ausente")
+
+      const exchanged = await supabase.auth.exchangeCodeForSession(code)
+      if (exchanged.error) {
+        const retry = await supabase.auth.getSession()
+        if (retry.data.session) {
+          entrar()
           return
         }
-        entrar()
-      }).catch(() => {
-        if (!encerrado) {
-          encerrado = true
-          clearTimeout(timer)
-          setFalhou(true)
-        }
-      })
-    }
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (encerrado) return
-      if (data.session) entrar()
-      else if (error) { encerrado = true; clearTimeout(timer); setFalhou(true) }
+        throw exchanged.error
+      }
+      entrar()
     }).catch(() => {
       if (!encerrado) { encerrado = true; clearTimeout(timer); setFalhou(true) }
     })

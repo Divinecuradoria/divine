@@ -76,7 +76,7 @@ export default function Curadoria() {
     finally { setBusy(false) }
   }
   return <main className="min-h-screen bg-alabastro px-5 pb-24 pt-32 text-onix"><Header /><div className="mx-auto max-w-5xl">
-    <h1 className="font-serif text-4xl">Curadoria DIVINE</h1><p className="mt-4">Avaliações privadas. A decisão editorial não depende de contratação comercial.</p>
+    <h1 className="font-serif text-4xl">Curadoria DIVINE</h1><p className="mt-4">Avaliações privadas. A decisão editorial não depende de contratação comercial.</p><Link className="mt-5 inline-block text-sm text-bronze underline" href="/curadoria/interesses">Ver interesses de fornecedores</Link>
     {message && <p role="status" className="my-6 rounded-lg border border-linha p-4">{message}</p>}
     {!allowed ? <Link className="mt-6 inline-block underline" href="/entrar?next=/curadoria">Entrar com minha conta</Link> : <div className="mt-8 grid gap-8 md:grid-cols-[260px_1fr]">
       <nav aria-label="Candidaturas" className="space-y-3">{!items.length && <p>Nenhuma candidatura recebida.</p>}{items.map(a=><button disabled={busy} key={a.id} onClick={()=>choose(a)} aria-pressed={selected?.id===a.id} className="block w-full rounded-lg border border-linha p-4 text-left disabled:opacity-50"><span className="block font-serif text-xl">{a.brand_name}</span><span className="text-sm">{STATES[a.status]}</span></button>)}</nav>

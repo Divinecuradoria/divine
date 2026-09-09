@@ -1,1 +1,6 @@
-sed: can't read supabase/migrations/202609090002_supplier_lead_notifications.sql: No such file or directory
+begin;
+
+alter table public.divine_supplier_leads
+  add column if not exists notification_sent_at timestamptz;
+
+commit;

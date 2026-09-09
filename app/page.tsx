@@ -153,11 +153,11 @@ export default function Page() {
         <div className="mx-auto max-w-[1600px]">
           <div className="grid grid-cols-2 gap-2 md:h-[82vh] md:grid-cols-12 md:grid-rows-2">
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-3 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="https://images.unsplash.com/photo-1594882645126-14020914d58d?q=80&w=800&auto=format&fit=crop" alt="Alta-costura" fill priority className="object-cover" />
+              <Image src="/images/hero-portrait.webp" alt="Noiva com buquê" fill priority sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
             </div>
             <div className="relative col-span-1 aspect-[3/4] overflow-hidden md:col-span-6 md:row-span-2 md:aspect-auto bg-onix/10">
-              <Image src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop" alt="Rito" fill priority className="object-cover" />
-              <div className="absolute inset-0 bg-onix/20" />
+              <Image src="/images/hero-ambience.webp" alt="Celebração de casamento" fill priority sizes="(max-width: 768px) 50vw, 50vw" className="object-cover grayscale brightness-75" />
+              <div className="absolute inset-0 bg-onix/35" />
             </div>
             <div className="relative col-span-1 aspect-[4/3] overflow-hidden md:col-span-3 md:row-span-1 md:aspect-auto bg-onix/10">
               <Image src="https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop" alt="Detalhe" fill className="object-cover" />
@@ -170,11 +170,11 @@ export default function Page() {
           <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 hidden -translate-y-1/2 px-4 md:block">
             <div className="mx-auto max-w-[1600px]">
               <motion.div initial="hidden" animate="visible" variants={fadeUp} className="mx-auto max-w-3xl text-center">
-                <p className="mb-6 text-[11px] font-light uppercase tracking-[0.5em] text-alabastro/90 drop-shadow">
+                <p className="mb-6 text-[11px] font-light uppercase tracking-[0.5em] text-alabastro/95 [text-shadow:0_2px_10px_rgba(0,0,0,0.8)]">
                   Curadoria Nupcial · Centro-Oeste Mineiro
                 </p>
                 <h1 className="text-balance font-serif text-5xl font-light leading-[0.98] tracking-tight text-alabastro [text-shadow:0_2px_18px_rgba(0,0,0,0.6)] lg:text-6xl xl:text-7xl">
-                  O extraordinário <span className="italic text-bronze">começa na escolha</span>.
+                  O extraordinário <span className="italic text-alabastro">começa na escolha</span>.
                 </h1>
               </motion.div>
             </div>

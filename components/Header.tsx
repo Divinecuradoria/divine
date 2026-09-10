@@ -70,7 +70,7 @@ export function Header() {
   const linkClass = "block rounded px-2 py-3 text-xs uppercase tracking-widest text-onix/80 hover:text-bronze focus-visible:outline-2 focus-visible:outline-bronze"
   const links = <>
     <Link className={linkClass} href="/diretorio">O Acervo</Link>
-    <Link className={linkClass} href="/revista">Revista DIVINE</Link>
+    <Link className={linkClass} href="/revista">O Editorial</Link>
     {!isLoggedIn && <Link className={`${linkClass} flex items-center gap-2`} href="/passaporte" title="Passaporte para noivos e casais">
       <HeartHandshake className="h-4 w-4 shrink-0 text-bronze" aria-hidden="true" /><span>Passaporte</span>
     </Link>}

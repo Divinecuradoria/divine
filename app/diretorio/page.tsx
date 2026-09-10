@@ -2,6 +2,9 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
+import { supplierAffinity, compareAffinity } from "@/lib/acervo-personalization"
+import { validateChoices, type ServiceChoice } from "@/lib/passport-services"
 import { Header } from "@/components/Header"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
@@ -111,7 +114,9 @@ function CartaoFornecedor({
   salvo,
   aoFavoritar,
   aoChamar,
+  reasons = [],
 }: {
+  reasons?: string[]
   fornecedor: Fornecedor
   indice: number
   salvo: boolean
@@ -211,6 +216,7 @@ function CartaoFornecedor({
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <h3 className="truncate font-serif text-xl leading-tight">{fornecedor.business_name}</h3>
+          {reasons.length > 0 && <p className="mt-2 text-xs leading-relaxed text-onix/65">{reasons.slice(0, 2).join(" · ")}</p>}
         </div>
 
         {/* Regra de ouro: WhatsApp a um clique, direto do card */}
@@ -241,6 +247,8 @@ function Diretorio() {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
   const [passaporte, setPassaporte] = useState<{ local: string } | null>(null)
+  const [choices, setChoices] = useState<ServiceChoice[]>([])
+  const [choicesUnavailable, setChoicesUnavailable] = useState(false)
   const [personalizacaoCarregada, setPersonalizacaoCarregada] = useState(false)
   const [aviso, setAviso] = useState("")
   const pendingFavorites = useRef(new Set<string>())
@@ -326,35 +334,52 @@ function Diretorio() {
     requestAnimationFrame(() => window.scrollTo(0, scrollY))
   }, [carregando, personalizacaoCarregada])
 
-  // Carrega os favoritos existentes da noiva (se logada)
+  // Recarregar por sessão e descartar respostas antigas evita misturar dois casais.
   useEffect(() => {
     const supabase = getSupabase()
     if (!supabase) { setPersonalizacaoCarregada(true); return }
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) {
-        setPassaporte(null)
-        return
-      }
-      const { data: perfil } = await supabase
-        .from("profiles")
-        .select("role,location")
-        .eq("id", data.user.id)
-        .maybeSingle()
-      const { data: perfilFornecedor, error: erroFornecedor } = await supabase.from("suppliers").select("id").eq("owner_user_id", data.user.id).limit(1)
-      if (erroFornecedor) throw erroFornecedor
-      const ehNoivo = !perfilFornecedor?.length && (["couple", "noiva", "noivo"].includes(perfil?.role || "") || data.user.user_metadata?.role === "couple")
-      if (!ehNoivo) {
-        setPassaporte(null)
-        setFavoritos(new Set())
-        return
-      }
-      setPassaporte({ local: String(perfil?.location ?? data.user.user_metadata?.location ?? "") })
-      const { data: favs } = await supabase
-        .from("favorites")
-        .select("supplier_id")
-        .eq("user_id", data.user.id)
-      if (favs) setFavoritos(new Set(favs.map((f) => f.supplier_id)))
-    }).catch(() => setAviso("Não foi possível carregar seus favoritos. Tente novamente.")).finally(() => setPersonalizacaoCarregada(true))
+    let active = true
+    let revision = 0
+    async function load() {
+      const request = ++revision
+      const current = () => active && request === revision
+      setPassaporte(null); setChoices([]); setFavoritos(new Set()); setChoicesUnavailable(false)
+      setPersonalizacaoCarregada(false)
+      try {
+        const { data, error } = await supabase!.auth.getUser()
+        if (error || !data.user) return
+        const user = data.user
+        const [profileResult, supplierResult] = await Promise.all([
+          supabase!.from("profiles").select("role,location").eq("id", user.id).maybeSingle(),
+          supabase!.from("suppliers").select("id").eq("owner_user_id", user.id).limit(1),
+        ])
+        if (profileResult.error || supplierResult.error) throw new Error("profile")
+        const profile = profileResult.data
+        const isCouple = !supplierResult.data?.length && (["couple", "noiva", "noivo"].includes(profile?.role || "") || user.user_metadata?.role === "couple")
+        if (!isCouple) return
+        const [favs, prefs] = await Promise.all([
+          supabase!.from("favorites").select("supplier_id").eq("user_id", user.id),
+          supabase!.from("couple_service_preferences").select("selections").eq("user_id", user.id).maybeSingle(),
+        ])
+        if (!current()) return
+        setPassaporte({ local: String(profile?.location ?? user.user_metadata?.location ?? "") })
+        if (favs.error) setAviso("Não foi possível carregar seus favoritos.")
+        else setFavoritos(new Set((favs.data || []).map(item => item.supplier_id)))
+        if (prefs.error || !validateChoices(prefs.data?.selections ?? [])) setChoicesUnavailable(true)
+        else setChoices(prefs.data?.selections ?? [])
+      } catch { if (current()) setAviso("Não foi possível personalizar o Acervo agora.") }
+      finally { if (current()) setPersonalizacaoCarregada(true) }
+    }
+    void load()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (!["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) return
+      revision++
+      setPassaporte(null); setChoices([]); setFavoritos(new Set()); setPersonalizacaoCarregada(false)
+      clearTimeout(timer)
+      timer = setTimeout(() => { if (active) void load() }, 0)
+    })
+    return () => { active = false; revision++; clearTimeout(timer); listener.subscription.unsubscribe() }
   }, [])
 
   useEffect(() => {
@@ -363,26 +388,17 @@ function Diretorio() {
     return () => clearTimeout(t)
   }, [aviso])
 
+  const affinities = useMemo(() => {
+    const city = passaporte?.local ? cidades.find(item => normalizaTexto(item.name) === normalizaTexto(passaporte.local) || normalizaTexto(`${item.name} ${item.state}`) === normalizaTexto(passaporte.local)) : null
+    return new Map(fornecedores.map(item => [item.id, supplierAffinity(item, choices, city?.id || null, favoritos)]))
+  }, [fornecedores, choices, cidades, passaporte, favoritos])
+
   const lista = useMemo(() => {
-    return fornecedores
-      .filter(f => matchesAcervo(f, filtros, cidades))
-      .sort((a, b) => {
-        // Para casais logados, interesses salvos vêm primeiro; em seguida,
-        // priorizamos referências na cidade informada no Passaporte.
-        if (passaporte) {
-          const favoritoA = favoritos.has(a.id) ? 1 : 0
-          const favoritoB = favoritos.has(b.id) ? 1 : 0
-          if (favoritoA !== favoritoB) return favoritoB - favoritoA
-
-          const cidadeCasal = cidades.find(city => normalizaTexto(city.name) === normalizaTexto(passaporte.local) || normalizaTexto(`${city.name} ${city.state}`) === normalizaTexto(passaporte.local))
-          const localA = (cidadeCasal ? servesCity(a, cidadeCasal.id) : fornecedorNoLocal(a, passaporte.local)) ? 1 : 0
-          const localB = (cidadeCasal ? servesCity(b, cidadeCasal.id) : fornecedorNoLocal(b, passaporte.local)) ? 1 : 0
-          if (localA !== localB) return localB - localA
-        }
-
-        return a.business_name.localeCompare(b.business_name, "pt-BR")
-      })
-  }, [fornecedores, filtros.categoria, filtros.cidade, filtros.servico, filtros.investimento, favoritos, passaporte, cidades])
+    return fornecedores.filter(f => matchesAcervo(f, filtros, cidades)).sort((a, b) => {
+      const difference = passaporte ? compareAffinity(affinities.get(a.id)!, affinities.get(b.id)!) : 0
+      return difference || a.business_name.localeCompare(b.business_name, "pt-BR") || a.id.localeCompare(b.id)
+    })
+  }, [fornecedores, filtros.categoria, filtros.cidade, filtros.servico, filtros.investimento, passaporte, cidades, affinities])
 
   const grupos = useMemo(() => {
     if (passaporte) {
@@ -470,9 +486,13 @@ function Diretorio() {
               {carregando
                 ? "Abrindo o acervo..."
                 : passaporte
-                  ? "Sua seleção começa pelos seus interesses e pelo território do Passaporte."
+                  ? choicesUnavailable ? "Escolhas indisponíveis no momento. Ordenamos por localização e favoritos." : "Prioridades e serviços procurados vêm primeiro; depois, localização e favoritos."
                   : `${lista.length} fornecedores encontrados`}
             </p>
+            {passaporte && <div className="mt-3 max-w-xl text-xs leading-relaxed text-onix/60">
+              <p>A ordem considera os dados declarados. Disponibilidade, deslocamento e proposta devem ser confirmados com o profissional.</p>
+              <Link href="/passaporte#escolhas-do-casal" className="mt-2 inline-block underline">Revisar minhas escolhas no Passaporte</Link>
+            </div>}
           </div>
           <button
             aria-expanded={filtrosAbertos}
@@ -596,6 +616,7 @@ function Diretorio() {
                         <CartaoFornecedor
                           key={`${grupo.key}-${f.id}`}
                           fornecedor={f}
+                          reasons={passaporte ? affinities.get(f.id)?.reasons : []}
                           indice={i}
                           salvo={favoritos.has(f.id)}
                           aoFavoritar={alternarFavorito}
@@ -627,4 +648,5 @@ export default function PaginaDiretorio() {
     </Suspense>
   )
 }
+
 

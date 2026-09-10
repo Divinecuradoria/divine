@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { ServiceFilter } from "@/components/service-filter"
 import { supplierAffinity, compareAffinity } from "@/lib/acervo-personalization"
 import { validateChoices, type ServiceChoice } from "@/lib/passport-services"
 import { Header } from "@/components/Header"
@@ -18,7 +19,7 @@ import {
 } from "lucide-react"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { INVESTMENT_OPTIONS } from "@/lib/supplier-profile"
-import { matchesAcervo, availableServices, servesCity, type AcervoFilters } from "@/lib/acervo-search"
+import { matchesAcervo, availableServices, acervoQuery, readServiceParams, type AcervoFilters } from "@/lib/acervo-search"
 
 
 type CategoriaRef = { id?: string; name: string; slug: string }
@@ -255,13 +256,13 @@ function Diretorio() {
   const filtros: Filtros = {
     categoria: params.get("categoria") || "",
     cidade: params.get("cidade") || "",
-    servico: params.get("servico") || "",
+    servico: "",
+    servicos: readServiceParams(params),
     investimento: params.get("investimento") || "",
   }
 
   function setFiltros(next: Filtros) {
-    const query = new URLSearchParams()
-    for (const [key, value] of Object.entries(next)) if (value) query.set(key, value)
+    const query = acervoQuery(next)
     router.replace(query.size ? `/diretorio?${query}` : "/diretorio", { scroll: false })
   }
 
@@ -398,7 +399,7 @@ function Diretorio() {
       const difference = passaporte ? compareAffinity(affinities.get(a.id)!, affinities.get(b.id)!) : 0
       return difference || a.business_name.localeCompare(b.business_name, "pt-BR") || a.id.localeCompare(b.id)
     })
-  }, [fornecedores, filtros.categoria, filtros.cidade, filtros.servico, filtros.investimento, passaporte, cidades, affinities])
+  }, [fornecedores, filtros.categoria, filtros.cidade, JSON.stringify(filtros.servicos), filtros.investimento, passaporte, cidades, affinities])
 
   const grupos = useMemo(() => {
     if (passaporte) {
@@ -429,7 +430,7 @@ function Diretorio() {
   const servicosDisponiveis = useMemo(() => availableServices(fornecedores, filtros.categoria), [fornecedores, filtros.categoria])
 
   function limparFiltros() {
-    setFiltros({ categoria: "", cidade: "", servico: "", investimento: "" })
+    setFiltros({ categoria: "", cidade: "", servico: "", servicos: [], investimento: "" })
   }
 
   async function alternarFavorito(id: string) {
@@ -513,14 +514,14 @@ function Diretorio() {
                   Categoria
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  <Chip ativo={filtros.categoria === ""} onClick={() => setFiltros({ ...filtros, categoria: "", servico: "" })}>
+                  <Chip ativo={filtros.categoria === ""} onClick={() => setFiltros({ ...filtros, categoria: "", servico: "", servicos: [] })}>
                     Todas
                   </Chip>
                   {categorias.map((c) => (
                     <Chip
                       key={c.slug}
                       ativo={filtros.categoria === c.slug}
-                      onClick={() => setFiltros({ ...filtros, categoria: c.slug, servico: "" })}
+                      onClick={() => setFiltros({ ...filtros, categoria: c.slug, servico: "", servicos: [] })}
                     >
                       {c.name}
                     </Chip>
@@ -548,15 +549,7 @@ function Diretorio() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="filtro-servico" className="mb-3 block text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/60">Serviço oferecido</label>
-                <select id="filtro-servico" value={filtros.servico} onChange={event => setFiltros({ ...filtros, servico: event.target.value })} className="w-full rounded-lg border border-linha bg-white px-3 py-3 text-sm focus:border-bronze">
-                  <option value="">Todos os serviços</option>
-                  {filtros.servico && !servicosDisponiveis.includes(filtros.servico) && <option value={filtros.servico}>{filtros.servico}</option>}
-                  {servicosDisponiveis.map(service => <option key={service} value={service}>{service}</option>)}
-                </select>
-                <p className="mt-2 text-xs leading-relaxed text-onix/60">Serviços informados pelas Referências desta categoria.</p>
-              </div>
+              <ServiceFilter categoryName={categorias.find(item => item.slug === filtros.categoria)?.name || ""} selected={filtros.servicos || []} declared={filtros.categoria ? servicosDisponiveis : []} onChange={servicos => setFiltros({ ...filtros, servico: "", servicos })} />
               <fieldset>
                 <legend className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/60">Faixa de investimento</legend>
                 <div className="flex flex-wrap gap-1.5">
@@ -593,7 +586,7 @@ function Diretorio() {
               <div className="rounded-2xl border border-dashed border-linha bg-white/60 p-12 text-center">
                 <p className="font-serif text-2xl">Nenhuma Referência com esses filtros</p>
                 <p className="mt-2 text-sm text-onix/50">
-                  Experimente ampliar a cidade, o serviço ou a faixa de investimento.
+                  Experimente remover um dos serviços selecionados ou ampliar a cidade e a faixa de investimento.
                 </p>
                 <button
                   onClick={limparFiltros}

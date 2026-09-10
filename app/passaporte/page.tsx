@@ -61,16 +61,17 @@ function PainelPassaporte() {
       ])
       if (perfilResult.error) throw perfilResult.error
       if (favResult.error) throw favResult.error
-      const base: PerfilCasal = perfilResult.data || {
-        full_name: String(meta.full_name || ""),
-        wedding_date: meta.wedding_date || null,
-        role: "couple",
-        whatsapp: meta.whatsapp || null,
-        location: meta.location || null,
-        guests: meta.guests ? Number(meta.guests) : null,
-        notes: meta.notes || null,
-        photo_url: null,
-        created_at: new Date().toISOString(),
+      const saved = perfilResult.data
+      const base: PerfilCasal = {
+        full_name: String(saved?.full_name || meta.full_name || ""),
+        wedding_date: saved?.wedding_date || meta.wedding_date || null,
+        role: saved?.role || "noiva",
+        whatsapp: saved?.whatsapp || meta.whatsapp || null,
+        location: saved?.location || meta.location || null,
+        guests: saved?.guests || (meta.guests ? Number(meta.guests) : null),
+        notes: saved?.notes || meta.notes || null,
+        photo_url: saved?.photo_url || null,
+        created_at: saved?.created_at || new Date().toISOString(),
       }
       let fotoAssinada = ""
       if (base.photo_url) {
@@ -130,7 +131,7 @@ function PainelPassaporte() {
     setSalvando(true); setMensagem(""); setErro("")
     try {
       const db = getSupabase(); if (!db) throw new Error(ACCESS_UNAVAILABLE)
-      const values = { id: userId, full_name: form.nome.trim(), wedding_date: form.data || null, role: "couple", whatsapp: form.whatsapp.trim() || null, location: form.local.trim() || null, guests: form.convidados ? Number(form.convidados) : null, notes: form.notas.trim() || null, photo_url: perfil?.photo_url || null, created_at: perfil?.created_at || new Date().toISOString() }
+      const values = { id: userId, full_name: form.nome.trim(), wedding_date: form.data || null, role: perfil?.role || "noiva", whatsapp: form.whatsapp.trim() || null, location: form.local.trim() || null, guests: form.convidados ? Number(form.convidados) : null, notes: form.notas.trim() || null, photo_url: perfil?.photo_url || null, created_at: perfil?.created_at || new Date().toISOString() }
       const result = await db.from("profiles").upsert(values, { onConflict: "id" })
       if (result.error) throw result.error
       await db.auth.updateUser({ data: { ...((await db.auth.getUser()).data.user?.user_metadata || {}), role: "couple", full_name: values.full_name, whatsapp: values.whatsapp, wedding_date: values.wedding_date, location: values.location, guests: values.guests, notes: values.notes } })

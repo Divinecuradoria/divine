@@ -30,6 +30,13 @@ function portfolioUrl(value: unknown): string {
   return first && typeof first === "object" && "url" in first && typeof first.url === "string" ? first.url : ""
 }
 
+function formatValidity(value: string | null): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date)
+}
+
 export default function PainelFornecedor() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
@@ -90,15 +97,41 @@ export default function PainelFornecedor() {
       const links = await db.from("supplier_categories").select("category_id").eq("supplier_id", supplierResult.data.id)
       if (links.error) throw links.error
       const item = supplierResult.data as Supplier
-      const publicationResult = await db.from("divine_publications")
-        .select("valid_until")
-        .eq("brand_name", item.business_name)
-        .eq("is_published", true)
-        .order("published_at", { ascending: false })
-        .limit(1)
+      let publishedValidity: string | null = null
+
+      // A publicação é vinculada à candidatura, não ao nome editável do fornecedor.
+      // Assim, a Chancela continua disponível mesmo se a marca alterar o nome público.
+      const applicationResult = await db.from("divine_applications")
+        .select("id")
+        .eq("user_id", currentUser.id)
         .maybeSingle()
-      if (publicationResult.error) throw publicationResult.error
-      setValidUntil(publicationResult.data?.valid_until || null)
+      if (applicationResult.error) throw applicationResult.error
+
+      if (applicationResult.data?.id) {
+        const publicationResult = await db.from("divine_publications")
+          .select("valid_until")
+          .eq("application_id", applicationResult.data.id)
+          .eq("is_published", true)
+          .maybeSingle()
+        if (publicationResult.error) throw publicationResult.error
+        publishedValidity = publicationResult.data?.valid_until || null
+      }
+
+      // Compatibilidade com publicações antigas que ainda não estejam vinculadas
+      // pela candidatura, usando o nome original como segunda tentativa.
+      if (!publishedValidity) {
+        const legacyPublication = await db.from("divine_publications")
+          .select("valid_until")
+          .eq("brand_name", item.business_name)
+          .eq("is_published", true)
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (legacyPublication.error) throw legacyPublication.error
+        publishedValidity = legacyPublication.data?.valid_until || null
+      }
+
+      setValidUntil(publishedValidity)
       setSupplier(item)
       setSelectedCategories((links.data || []).map((link) => link.category_id))
       setForm({
@@ -323,17 +356,19 @@ export default function PainelFornecedor() {
                 <p className="mt-3 text-xs leading-relaxed text-onix/60">Use uma imagem horizontal ou vertical de boa qualidade, com até 6 MB. Ela ficará visível no card público do Acervo.</p>
               </section>
 
-              {supplier.has_divine_seal && validUntil && <section className="border-t border-linha pt-6">
+              {supplier.has_divine_seal && <section className="border-t border-linha pt-6">
                 <h2 className="font-serif text-2xl">Chancela DIVINE</h2>
                 <div className="mt-4 flex items-center gap-4 rounded-xl border border-bronze/30 bg-bronze/5 p-4">
                   <img src="/divine-seal2.svg" alt="Chancela DIVINE" className="h-20 w-20 shrink-0 object-contain" />
                   <div>
                     <p className="text-sm font-medium">Referência DIVINE</p>
-                    <p className="mt-1 text-xs leading-relaxed text-onix/60">Validade editorial até {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(validUntil))}.</p>
+                    {validUntil
+                      ? <p className="mt-1 text-xs leading-relaxed text-onix/60">Validade editorial até {formatValidity(validUntil)}.</p>
+                      : <p className="mt-1 text-xs leading-relaxed text-onix/60">A validade editorial está sendo sincronizada.</p>}
                   </div>
                 </div>
-                <button type="button" onClick={downloadSeal} disabled={downloadingSeal} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm transition hover:border-bronze hover:text-bronze disabled:opacity-50">
-                  {downloadingSeal ? "Preparando arte…" : "Baixar arte personalizada"}
+                <button type="button" onClick={downloadSeal} disabled={downloadingSeal || !validUntil} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm transition hover:border-bronze hover:text-bronze disabled:opacity-50">
+                  {downloadingSeal ? "Preparando arte…" : validUntil ? "Baixar arte personalizada" : "Arte aguardando validade"}
                 </button>
                 <p className="mt-3 text-xs leading-relaxed text-onix/60">A arte inclui o nome público da sua empresa e o ano de validade da Chancela. Use-a apenas enquanto a referência estiver vigente.</p>
               </section>}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, CalendarCheck, ExternalLink, MapPin, MessageCircle, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ExternalLink, MapPin, MessageCircle, ShieldCheck } from "lucide-react"
 import { Header } from "@/components/Header"
 import { getSupabase } from "@/lib/supabase"
 
@@ -42,6 +42,13 @@ function whatsappUrl(value: string | null): string | undefined {
   return `https://wa.me/${international}?text=${encodeURIComponent("Olá! Encontrei seu trabalho no Acervo DIVINE e gostaria de conversar sobre meu casamento.")}`
 }
 
+function formatValidity(value: string | null): string {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date)
+}
+
 function priceLabel(min: number | null, max: number | null): string {
   if (min != null && max != null) return `R$ ${(min / 1000).toFixed(0)}–${(max / 1000).toFixed(0)} mil`
   if (min != null) return `A partir de R$ ${(min / 1000).toFixed(0)} mil`
@@ -55,6 +62,7 @@ export default function DetalheFornecedor() {
   const [fornecedor, setFornecedor] = useState<Fornecedor | null>(null)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [cidade, setCidade] = useState<{ name: string; state: string } | null>(null)
+  const [validUntil, setValidUntil] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -73,16 +81,19 @@ export default function DetalheFornecedor() {
       if (!result.data) { setError("Esta Referência não está disponível no Acervo."); setLoading(false); return }
 
       const item = result.data as Fornecedor
-      const [links, categoryResult, cityResult] = await Promise.all([
+      const [links, categoryResult, cityResult, publicationResult] = await Promise.all([
         db.from("supplier_categories").select("category_id").eq("supplier_id", item.id),
         db.from("categories").select("id,name,slug").order("name"),
         item.city_id ? db.from("cities").select("id,name,state").eq("id", item.city_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        db.from("divine_publications").select("valid_until").eq("brand_name", item.business_name).eq("is_published", true).order("published_at", { ascending: false }).limit(1).maybeSingle(),
       ])
       if (categoryResult.error) throw categoryResult.error
       if (cityResult.error) throw cityResult.error
+      if (publicationResult.error) throw publicationResult.error
       const categoryIds = new Set((links.data || []).map((link) => link.category_id))
       setCategorias(((categoryResult.data || []) as Categoria[]).filter((category) => categoryIds.has(category.id)))
       setCidade(cityResult.data ? { name: cityResult.data.name, state: cityResult.data.state } : null)
+      setValidUntil(publicationResult.data?.valid_until || null)
       setFornecedor(item)
       setLoading(false)
     }
@@ -121,10 +132,17 @@ export default function DetalheFornecedor() {
                   {categorias.map((category) => <span key={category.id} className="rounded-full bg-bronze/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-bronze">{category.name}</span>)}
                   {fornecedor.has_divine_seal && <span className="inline-flex items-center gap-1 rounded-full bg-bronze px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-alabastro"><ShieldCheck className="h-3 w-3" /> Chancela DIVINE</span>}
                 </div>
+                {fornecedor.has_divine_seal && <div className="mt-7 flex items-center gap-4 rounded-xl border border-bronze/30 bg-bronze/5 p-4">
+                  <Image src="/divine-seal2.svg" alt="Chancela DIVINE" width={84} height={84} className="h-20 w-20 shrink-0 object-contain" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-bronze">Chancela DIVINE</p>
+                    <p className="mt-1 text-sm leading-relaxed text-onix/70">Reconhecimento editorial da Curadoria Nupcial.</p>
+                    {formatValidity(validUntil) && <p className="mt-1 text-xs text-onix/60">Válida até {formatValidity(validUntil)}</p>}
+                  </div>
+                </div>                </div>
                 <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">{fornecedor.business_name}</h1>
                 <div className="mt-4 space-y-2 text-sm text-onix/60">
                   {cidade && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-bronze" /> {cidade.name}, {cidade.state}</p>}
-                  <p className="flex items-center gap-2"><CalendarCheck className="h-4 w-4 text-bronze" /> {fornecedor.agenda_aberta ? "Agenda aberta" : "Lista de espera"}</p>
                   <p>{priceLabel(fornecedor.price_min, fornecedor.price_max)}</p>
                 </div>
                 {fornecedor.bio && <p className="mt-8 whitespace-pre-line text-base leading-relaxed text-onix/75">{fornecedor.bio}</p>}

@@ -47,6 +47,8 @@ export default function PainelFornecedor() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+  const [downloadingSeal, setDownloadingSeal] = useState(false)
+  const [validUntil, setValidUntil] = useState<string | null>(null)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
 
@@ -88,6 +90,15 @@ export default function PainelFornecedor() {
       const links = await db.from("supplier_categories").select("category_id").eq("supplier_id", supplierResult.data.id)
       if (links.error) throw links.error
       const item = supplierResult.data as Supplier
+      const publicationResult = await db.from("divine_publications")
+        .select("valid_until")
+        .eq("brand_name", item.business_name)
+        .eq("is_published", true)
+        .order("published_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (publicationResult.error) throw publicationResult.error
+      setValidUntil(publicationResult.data?.valid_until || null)
       setSupplier(item)
       setSelectedCategories((links.data || []).map((link) => link.category_id))
       setForm({
@@ -200,6 +211,73 @@ export default function PainelFornecedor() {
     finally { setChangingPassword(false) }
   }
 
+  async function downloadSeal() {
+    if (!supplier || !validUntil || downloadingSeal) return
+    setDownloadingSeal(true)
+    setMessage("")
+    setError("")
+    try {
+      const image = new window.Image()
+      image.src = "/divine-seal2.svg"
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = () => reject(new Error("Não foi possível carregar a Chancela DIVINE."))
+      })
+
+      const canvas = document.createElement("canvas")
+      canvas.width = 1600
+      canvas.height = 1000
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("Seu navegador não permite gerar a arte.")
+
+      context.fillStyle = "#f7f4ef"
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.strokeStyle = "#b07b43"
+      context.lineWidth = 3
+      context.strokeRect(34, 34, canvas.width - 68, canvas.height - 68)
+      context.textAlign = "center"
+      context.fillStyle = "#171717"
+      context.font = "600 42px Georgia, serif"
+      context.fillText("CHANCELA DIVINE", canvas.width / 2, 128)
+      context.drawImage(image, 590, 190, 420, 420)
+
+      const nome = supplier.business_name.trim() || "Referência DIVINE"
+      const palavras = nome.split(/\s+/)
+      const linhas: string[] = []
+      let linha = ""
+      context.font = "600 54px Georgia, serif"
+      for (const palavra of palavras) {
+        const tentativa = linha ? linha + " " + palavra : palavra
+        if (context.measureText(tentativa).width > 1160 && linha) {
+          linhas.push(linha)
+          linha = palavra
+        } else {
+          linha = tentativa
+        }
+      }
+      if (linha) linhas.push(linha)
+      linhas.slice(0, 2).forEach((texto, index) => context.fillText(texto, canvas.width / 2, 690 + index * 64))
+
+      const validade = new Intl.DateTimeFormat("pt-BR", { year: "numeric" }).format(new Date(validUntil))
+      context.fillStyle = "#8f6036"
+      context.font = "500 30px Arial, sans-serif"
+      context.fillText(`Válida até ${validade}`, canvas.width / 2, 840)
+      context.fillStyle = "#5c5148"
+      context.font = "24px Arial, sans-serif"
+      context.fillText("Curadoria Nupcial · Centro-Oeste Mineiro", canvas.width / 2, 900)
+
+      const link = document.createElement("a")
+      link.download = `chancela-divine-${nome.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}.png`
+      link.href = canvas.toDataURL("image/png")
+      link.click()
+      setMessage("Arte personalizada da Chancela baixada.")
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível gerar a arte da Chancela.")
+    } finally {
+      setDownloadingSeal(false)
+    }
+  }
+
   function toggleCategory(id: string) {
     setSelectedCategories((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
   }
@@ -244,6 +322,21 @@ export default function PainelFornecedor() {
                 <label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm hover:border-bronze">{uploading ? "Enviando…" : "Enviar nova foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadCover} disabled={uploading} className="sr-only" /></label>
                 <p className="mt-3 text-xs leading-relaxed text-onix/60">Use uma imagem horizontal ou vertical de boa qualidade, com até 6 MB. Ela ficará visível no card público do Acervo.</p>
               </section>
+
+              {supplier.has_divine_seal && validUntil && <section className="border-t border-linha pt-6">
+                <h2 className="font-serif text-2xl">Chancela DIVINE</h2>
+                <div className="mt-4 flex items-center gap-4 rounded-xl border border-bronze/30 bg-bronze/5 p-4">
+                  <img src="/divine-seal2.svg" alt="Chancela DIVINE" className="h-20 w-20 shrink-0 object-contain" />
+                  <div>
+                    <p className="text-sm font-medium">Referência DIVINE</p>
+                    <p className="mt-1 text-xs leading-relaxed text-onix/60">Validade editorial até {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(validUntil))}.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={downloadSeal} disabled={downloadingSeal} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm transition hover:border-bronze hover:text-bronze disabled:opacity-50">
+                  {downloadingSeal ? "Preparando arte…" : "Baixar arte personalizada"}
+                </button>
+                <p className="mt-3 text-xs leading-relaxed text-onix/60">A arte inclui o nome público da sua empresa e o ano de validade da Chancela. Use-a apenas enquanto a referência estiver vigente.</p>
+              </section>}
 
               <section className="border-t border-linha pt-6">
                 <h2 className="font-serif text-2xl">Contato e redes</h2>

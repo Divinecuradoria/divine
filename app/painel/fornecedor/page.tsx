@@ -7,9 +7,16 @@ import { Header } from "@/components/Header"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { fieldClass } from "@/lib/curadoria"
 import { compactarImagem } from "@/lib/image-compression"
+import { SERVICE_OPTIONS, INVESTMENT_OPTIONS, uniqueServices } from "@/lib/supplier-profile"
 
+type City = { id: string; name: string; state: string }
 type Category = { id: string; name: string; slug: string }
 type Supplier = {
+  city_id: string | null
+  primary_category_id: string | null
+  service_city_ids: string[]
+  other_service_areas: string | null
+  investment_levels: string[]
   id: string
   business_name: string
   bio: string | null
@@ -48,6 +55,13 @@ export default function PainelFornecedor() {
     businessName: "", bio: "", whatsapp: "", portfolioUrl: "",
     services: "", instagram: "", facebook: "", tiktok: "", website: "",
   })
+  const [cities, setCities] = useState<City[]>([])
+  const [baseCity, setBaseCity] = useState("")
+  const [primaryCategory, setPrimaryCategory] = useState("")
+  const [serviceCities, setServiceCities] = useState<string[]>([])
+  const [otherAreas, setOtherAreas] = useState("")
+  const [investmentLevels, setInvestmentLevels] = useState<string[]>([])
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [password, setPassword] = useState("")
   const [passwordConfirmation, setPasswordConfirmation] = useState("")
   const [loading, setLoading] = useState(true)
@@ -64,6 +78,21 @@ export default function PainelFornecedor() {
     [categories, selectedCategories]
   )
 
+  const serviceOptions = useMemo(() => uniqueServices(selectedNames.flatMap(name => SERVICE_OPTIONS[name] || [])), [selectedNames])
+  const allServices = uniqueServices([...selectedServices, ...form.services.split("\n")])
+  const missing = [
+    !form.businessName.trim() && { label: "Nome público", target: "public-name" },
+    !form.bio.trim() && { label: "Apresentação", target: "presentation" },
+    !form.portfolioUrl.trim() && { label: "Portfólio", target: "portfolio-link" },
+    !form.whatsapp.trim() && { label: "WhatsApp", target: "contact-whatsapp" },
+    !supplier?.cover_image_url && { label: "Foto de capa", target: "cover-photo" },
+    (!primaryCategory || !selectedCategories.includes(primaryCategory)) && { label: "Categoria principal", target: "primary-category" },
+    !allServices.length && { label: "Serviços", target: "offered-services" },
+    !baseCity && { label: "Cidade-base", target: "base-city" },
+    (!serviceCities.length && !otherAreas.trim()) && { label: "Território atendido", target: "service-territory" },
+    !investmentLevels.length && { label: "Faixa de investimento", target: "investment-levels" },
+  ].filter((item): item is { label: string; target: string } => Boolean(item))
+
   useEffect(() => {
     let live = true
     async function load() {
@@ -75,21 +104,24 @@ export default function PainelFornecedor() {
         return
       }
       const currentUser = auth.data.user
-      const [supplierResult, categoriesResult] = await Promise.all([
+      const [supplierResult, categoriesResult, citiesResult] = await Promise.all([
         db.from("suppliers")
-        .select("id,business_name,bio,cover_image_url,whatsapp,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,has_divine_seal")
+        .select("id,business_name,bio,cover_image_url,whatsapp,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,has_divine_seal,city_id,primary_category_id,service_city_ids,other_service_areas,investment_levels")
           .eq("owner_user_id", currentUser.id)
           .eq("is_active", true)
           .limit(1)
           .maybeSingle(),
         db.from("categories").select("id,name,slug").order("name"),
+        db.from("cities").select("id,name,state").order("name"),
       ])
       if (supplierResult.error) throw supplierResult.error
       if (categoriesResult.error) throw categoriesResult.error
+      if (citiesResult.error) throw citiesResult.error
       if (!live) return
       setUserId(currentUser.id)
       setEmail(currentUser.email || "")
       setCategories(categoriesResult.data || [])
+      setCities(citiesResult.data || [])
       if (!supplierResult.data) {
         setLoading(false)
         return
@@ -133,13 +165,21 @@ export default function PainelFornecedor() {
 
       setValidUntil(publishedValidity)
       setSupplier(item)
+      setBaseCity(item.city_id || "")
+      setPrimaryCategory(item.primary_category_id || "")
+      setServiceCities(item.service_city_ids || [])
+      setOtherAreas(item.other_service_areas || "")
+      setInvestmentLevels(item.investment_levels || [])
+      const linkedNames = (categoriesResult.data || []).filter(category => (links.data || []).some(link => link.category_id === category.id)).map(category => category.name)
+      const knownServices = uniqueServices(linkedNames.flatMap(name => SERVICE_OPTIONS[name] || []))
+      setSelectedServices((item.services || []).filter(service => knownServices.includes(service)))
       setSelectedCategories((links.data || []).map((link) => link.category_id))
       setForm({
         businessName: item.business_name || "",
         bio: item.bio || "",
         whatsapp: item.whatsapp || "",
         portfolioUrl: portfolioUrl(item.portfolio),
-        services: (item.services || []).join("\n"),
+        services: (item.services || []).filter(service => !knownServices.includes(service)).join("\n"),
         instagram: item.instagram_url || "",
         facebook: item.facebook_url || "",
         tiktok: item.tiktok_url || "",
@@ -149,7 +189,7 @@ export default function PainelFornecedor() {
     }
     load().catch((reason) => {
       if (!live) return
-      setError(reason instanceof Error && reason.message !== ACCESS_UNAVAILABLE ? "Não foi possível carregar seu painel." : ACCESS_UNAVAILABLE)
+      setError(reason instanceof Error && reason.message === ACCESS_UNAVAILABLE ? ACCESS_UNAVAILABLE : "Não foi possível carregar seu painel. Se esta atualização acabou de ser instalada, a equipe DIVINE precisa aplicar a atualização do banco de dados.")
       setLoading(false)
     })
     return () => { live = false }
@@ -169,36 +209,37 @@ export default function PainelFornecedor() {
       const url = form.portfolioUrl.trim()
       if (url && !/^https:\/\/[^\s]+$/i.test(url)) throw new Error("O link do portfólio deve começar com https://.")
       const existingPortfolio = Array.isArray(supplier.portfolio) ? supplier.portfolio : []
-      const services = form.services.split("\n").map((service) => service.trim()).filter(Boolean).slice(0, 12)
-      const profileResult = await db.from("suppliers").update({
-        business_name: form.businessName.trim(),
-        bio: form.bio.trim() || null,
-        whatsapp: form.whatsapp.trim() || null,
-        services,
-        instagram_url: form.instagram.trim() || null,
-        facebook_url: form.facebook.trim() || null,
-        tiktok_url: form.tiktok.trim() || null,
-        website_url: form.website.trim() || null,
-        portfolio: url ? [{ url }] : existingPortfolio,
-      }).eq("id", supplier.id).eq("owner_user_id", userId)
-      if (profileResult.error) throw profileResult.error
-      const removeResult = await db.from("supplier_categories").delete().eq("supplier_id", supplier.id)
-      if (removeResult.error) throw removeResult.error
-      if (selectedCategories.length) {
-        const categoryResult = await db.from("supplier_categories").insert(
-          selectedCategories.map((category_id) => ({ supplier_id: supplier.id, category_id }))
-        )
-        if (categoryResult.error) throw categoryResult.error
-      }
+      const services = allServices
+      if (services.length > 40 || services.some(service => service.length > 120)) throw new Error("Use até 40 serviços, com no máximo 120 caracteres cada.")
+      if (!selectedCategories.length) throw new Error("Selecione ao menos uma categoria.")
+      if (primaryCategory && !selectedCategories.includes(primaryCategory)) throw new Error("Selecione uma categoria principal entre suas categorias de atuação.")
+      const profileResult = await db.rpc("divine_save_supplier_profile", {
+        p_id: supplier.id,
+        p_profile: {
+          business_name: form.businessName.trim(), bio: form.bio.trim(),
+          whatsapp: form.whatsapp.trim(), services,
+          instagram_url: form.instagram.trim(), facebook_url: form.facebook.trim(),
+          tiktok_url: form.tiktok.trim(), website_url: form.website.trim(),
+          portfolio: url ? [{ url }, ...existingPortfolio.slice(1)] : [],
+          city_id: baseCity || null, primary_category_id: primaryCategory || null,
+          service_city_ids: serviceCities, other_service_areas: otherAreas.trim(),
+          investment_levels: investmentLevels,
+        },
+        p_category_ids: selectedCategories,
+      })
+      if (profileResult.error) throw new Error("Não foi possível salvar. Verifique sua conexão e seu acesso. Se o problema persistir, informe a Curadoria.")
       setSupplier((current) => current ? {
         ...current,
         business_name: form.businessName.trim(), bio: form.bio.trim() || null,
         whatsapp: form.whatsapp.trim() || null,
         services, instagram_url: form.instagram.trim() || null,
         facebook_url: form.facebook.trim() || null, tiktok_url: form.tiktok.trim() || null,
-        website_url: form.website.trim() || null, portfolio: url ? [{ url }] : existingPortfolio,
+        website_url: form.website.trim() || null, portfolio: url ? [{ url }, ...existingPortfolio.slice(1)] : [],
+        city_id: baseCity || null, primary_category_id: primaryCategory || null,
+        service_city_ids: serviceCities, other_service_areas: otherAreas.trim() || null,
+        investment_levels: investmentLevels,
       } : current)
-      setMessage("Perfil atualizado. As mudanças já estão disponíveis no Acervo.")
+      setMessage(missing.length ? "Alterações salvas. Complete os itens indicados para enriquecer seu perfil. Seu card continua no Acervo." : "Perfil completo e salvo. Seus serviços já estão disponíveis na página da sua Referência.")
     } catch (reason) {
       setError(reason instanceof Error && reason.message !== ACCESS_UNAVAILABLE ? reason.message : "Não foi possível salvar seu perfil.")
     } finally { setSaving(false) }
@@ -378,7 +419,14 @@ export default function PainelFornecedor() {
   }
 
   function toggleCategory(id: string) {
-    setSelectedCategories((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+    const next = selectedCategories.includes(id) ? selectedCategories.filter(item => item !== id) : [...selectedCategories, id]
+    const nextOptions = uniqueServices(categories.filter(category => next.includes(category.id)).flatMap(category => SERVICE_OPTIONS[category.name] || []))
+    // Ao remover uma categoria, conservar serviços como texto editável evita perda silenciosa.
+    const retainedAsOther = selectedServices.filter(service => !nextOptions.includes(service))
+    if (retainedAsOther.length) updateField("services", uniqueServices([...form.services.split("\n"), ...retainedAsOther]).join("\n"))
+    setSelectedServices(current => current.filter(service => nextOptions.includes(service)))
+    setSelectedCategories(next)
+    if (primaryCategory === id && !next.includes(id)) setPrimaryCategory("")
   }
 
   return (
@@ -398,27 +446,54 @@ export default function PainelFornecedor() {
           </section>
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
-            <form onSubmit={saveProfile} className="space-y-6">
+            <form id="supplier-profile" onSubmit={saveProfile} className="space-y-6">
+              <fieldset disabled={saving || uploading} className="space-y-6 min-w-0">
+              <section aria-label="Preenchimento do perfil" className="rounded-xl border border-bronze/30 bg-bronze/5 p-5">
+                <h2 className="font-serif text-2xl">{missing.length ? `Faltam ${missing.length} informações para completar seu perfil` : "Seu perfil está completo"}</h2>
+                <p className="mt-2 text-sm leading-relaxed">Você pode salvar aos poucos. Completar o perfil ajuda os casais a conhecer sua proposta; a Chancela é uma decisão editorial.</p>
+                {!!missing.length && <ul className="mt-3 flex flex-wrap gap-2">{missing.map(item => <li key={item.target}><a className="inline-block rounded border border-bronze/30 bg-white px-3 py-2 text-sm underline underline-offset-4" href={`#${item.target}`}>{item.label}</a></li>)}</ul>}
+              </section>
               <section className="space-y-5 border-t border-linha pt-6">
                 <h2 className="font-serif text-2xl">Informações do card</h2>
-                <label className="block text-sm">Nome público<input required maxLength={160} value={form.businessName} onChange={(event) => updateField("businessName", event.target.value)} className={fieldClass} /></label>
-                <label className="block text-sm">Texto de apresentação<textarea required maxLength={1200} rows={5} value={form.bio} onChange={(event) => updateField("bio", event.target.value)} className={fieldClass} /></label>
-                <label className="block text-sm">Link principal do portfólio<input type="url" placeholder="https://" value={form.portfolioUrl} onChange={(event) => updateField("portfolioUrl", event.target.value)} className={fieldClass} /></label>
-                <label className="block text-sm">Principais serviços <span className="text-onix/50">(um por linha)</span><textarea maxLength={1200} rows={5} value={form.services} onChange={(event) => updateField("services", event.target.value)} className={fieldClass} /></label>
+                <label className="block text-sm">Nome público<input id="public-name" required maxLength={160} value={form.businessName} onChange={(event) => updateField("businessName", event.target.value)} className={fieldClass} /></label>
+                <label className="block text-sm">Texto de apresentação<textarea id="presentation" maxLength={1200} rows={5} value={form.bio} onChange={(event) => updateField("bio", event.target.value)} className={fieldClass} /></label>
+                <label className="block text-sm">Link principal do portfólio<input id="portfolio-link" type="url" placeholder="https://" value={form.portfolioUrl} onChange={(event) => updateField("portfolioUrl", event.target.value)} className={fieldClass} /></label>
+
                 <fieldset>
                   <legend className="text-sm">Categorias de atuação <span className="text-onix/50">(selecione uma ou mais)</span></legend>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">{categories.map((category) => <label key={category.id} className="flex items-start gap-2 rounded border border-linha bg-white p-3 text-sm"><input type="checkbox" checked={selectedCategories.includes(category.id)} onChange={() => toggleCategory(category.id)} className="mt-0.5" />{category.name}</label>)}</div>
                   {!!selectedNames.length && <p className="mt-3 text-xs text-onix/60">Selecionadas: {selectedNames.join(" · ")}</p>}
                 </fieldset>
-                <button type="submit" disabled={saving} className="w-full rounded-lg bg-onix px-6 py-4 text-alabastro disabled:opacity-60">{saving ? "Salvando…" : "Salvar informações públicas"}</button>
+                <label className="block text-sm">Categoria principal<select id="primary-category" value={primaryCategory} onChange={event => setPrimaryCategory(event.target.value)} className={fieldClass}><option value="">Selecione</option>{categories.filter(category => selectedCategories.includes(category.id)).map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+                <fieldset id="offered-services" className="scroll-mt-32">
+                  <legend className="font-serif text-2xl">Serviços oferecidos</legend>
+                  <p className="mt-2 text-sm text-onix/70">Marque apenas o que você oferece. A composição da proposta será combinada com o casal.</p>
+                  {!selectedCategories.length && <p className="mt-3 text-sm">Selecione uma categoria acima para ver os serviços.</p>}
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceOptions.map(service => <label key={service} className="flex items-start gap-2 rounded border border-linha bg-white p-3 text-sm"><input type="checkbox" checked={selectedServices.includes(service)} onChange={() => setSelectedServices(current => current.includes(service) ? current.filter(item => item !== service) : [...current, service])} className="mt-0.5" />{service}</label>)}</div>
+                  <label className="mt-4 block text-sm">Outros serviços ou serviços já cadastrados<textarea maxLength={4800} rows={3} value={form.services} onChange={event => updateField("services", event.target.value)} className={fieldClass} /><span className="mt-2 block text-xs text-onix/60">Um por linha. Seus serviços anteriores foram preservados.</span></label>
+                </fieldset>
+                <section id="service-territory" className="scroll-mt-32 space-y-4 border-t border-linha pt-5">
+                  <h2 className="font-serif text-2xl">Onde você atende</h2>
+                  <label className="block text-sm">Cidade-base<select id="base-city" value={baseCity} onChange={event => setBaseCity(event.target.value)} className={fieldClass}><option value="">Selecione</option>{cities.map(city => <option key={city.id} value={city.id}>{city.name} — {city.state}</option>)}</select></label>
+                  <fieldset><legend className="text-sm">Cidades atendidas — marque também sua cidade-base se atender nela</legend><div className="mt-3 grid gap-2 sm:grid-cols-2">{cities.map(city => <label key={city.id} className="flex items-start gap-2 rounded border border-linha bg-white p-3 text-sm"><input type="checkbox" checked={serviceCities.includes(city.id)} onChange={() => setServiceCities(current => current.includes(city.id) ? current.filter(id => id !== city.id) : [...current, city.id])} className="mt-0.5" />{city.name} — {city.state}</label>)}</div></fieldset>
+                  <label className="block text-sm">Outras cidades ou regiões atendidas<input maxLength={500} value={otherAreas} onChange={event => setOtherAreas(event.target.value)} className={fieldClass} placeholder="Ex.: outras cidades de Minas Gerais, sob consulta" /></label>
+                </section>
+                <fieldset id="investment-levels" className="scroll-mt-32 space-y-3 border-t border-linha pt-5">
+                  <legend className="font-serif text-2xl">Faixas de investimento</legend>
+                  <p className="text-sm leading-relaxed text-onix/70">Selecione uma ou mais faixas que representem suas propostas. São orientações de investimento, sem relação com a qualidade ou a Chancela DIVINE.</p>
+                  {INVESTMENT_OPTIONS.map(option => <label key={option.value} className="flex items-start gap-3 rounded-lg border border-linha bg-white p-4 text-sm"><input type="checkbox" checked={investmentLevels.includes(option.value)} onChange={() => setInvestmentLevels(current => current.includes(option.value) ? current.filter(value => value !== option.value) : [...current, option.value])} className="mt-1" /><span><strong>{option.label}</strong><span className="mt-1 block text-onix/70">{option.description}</span></span></label>)}
+                  <p className="text-sm text-onix/70">Disponibilidade e proposta comercial sempre sob consulta.</p>
+                </fieldset>
+                <button type="submit" disabled={saving || uploading} className="w-full rounded-lg bg-onix px-6 py-4 text-alabastro disabled:opacity-60">{saving ? "Salvando…" : "Salvar informações públicas"}</button>
               </section>
+              </fieldset>
             </form>
 
             <aside className="space-y-8">
-              <section className="border-t border-linha pt-6">
+              <section id="cover-photo" className="scroll-mt-32 border-t border-linha pt-6">
                 <h2 className="font-serif text-2xl">Foto de capa</h2>
                 {supplier.cover_image_url ? <img src={supplier.cover_image_url} alt="Capa atual do perfil" className="mt-4 aspect-[4/5] w-full rounded-lg object-cover" /> : <div className="mt-4 flex aspect-[4/5] items-center justify-center rounded-lg bg-onix text-4xl text-alabastro">D</div>}
-                <label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm hover:border-bronze">{uploading ? "Enviando…" : "Enviar nova foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadCover} disabled={uploading} className="sr-only" /></label>
+                <label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm hover:border-bronze">{uploading ? "Enviando…" : "Enviar nova foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadCover} disabled={uploading || saving} className="sr-only" /></label>
                 <p className="mt-3 text-xs leading-relaxed text-onix/60">Use uma imagem horizontal ou vertical de boa qualidade, com até 6 MB. Ela ficará visível no card público do Acervo.</p>
               </section>
 
@@ -442,12 +517,13 @@ export default function PainelFornecedor() {
               <section className="border-t border-linha pt-6">
                 <h2 className="font-serif text-2xl">Contato e redes</h2>
                 <div className="mt-5 space-y-4">
-                  <label className="block text-sm">WhatsApp<input value={form.whatsapp} onChange={(event) => updateField("whatsapp", event.target.value)} className={fieldClass} /></label>
-                  <label className="block text-sm">Instagram<input type="url" placeholder="https://instagram.com/" value={form.instagram} onChange={(event) => updateField("instagram", event.target.value)} className={fieldClass} /></label>
-                  <label className="block text-sm">Facebook<input type="url" placeholder="https://facebook.com/" value={form.facebook} onChange={(event) => updateField("facebook", event.target.value)} className={fieldClass} /></label>
-                  <label className="block text-sm">TikTok<input type="url" placeholder="https://tiktok.com/@" value={form.tiktok} onChange={(event) => updateField("tiktok", event.target.value)} className={fieldClass} /></label>
-                  <label className="block text-sm">Outro site<input type="url" placeholder="https://" value={form.website} onChange={(event) => updateField("website", event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">WhatsApp<input id="contact-whatsapp" form="supplier-profile" disabled={saving || uploading} type="tel" maxLength={30} value={form.whatsapp} onChange={(event) => updateField("whatsapp", event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">Instagram<input form="supplier-profile" disabled={saving || uploading} type="url" maxLength={2000} placeholder="https://instagram.com/" value={form.instagram} onChange={(event) => updateField("instagram", event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">Facebook<input form="supplier-profile" disabled={saving || uploading} type="url" maxLength={2000} placeholder="https://facebook.com/" value={form.facebook} onChange={(event) => updateField("facebook", event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">TikTok<input form="supplier-profile" disabled={saving || uploading} type="url" maxLength={2000} placeholder="https://tiktok.com/@" value={form.tiktok} onChange={(event) => updateField("tiktok", event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">Outro site<input form="supplier-profile" disabled={saving || uploading} type="url" maxLength={2000} placeholder="https://" value={form.website} onChange={(event) => updateField("website", event.target.value)} className={fieldClass} /></label>
                 </div>
+                <button type="submit" form="supplier-profile" disabled={saving || uploading} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50">{saving ? "Salvando…" : "Salvar contato e perfil"}</button>
               </section>
 
               <section className="border-t border-linha pt-6">
@@ -466,3 +542,4 @@ export default function PainelFornecedor() {
     </main>
   )
 }
+

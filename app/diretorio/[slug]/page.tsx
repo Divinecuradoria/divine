@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ExternalLink, MapPin, MessageCircle, ShieldCheck } from "lucide-react"
 import { Header } from "@/components/Header"
 import { getSupabase } from "@/lib/supabase"
+import { INVESTMENT_OPTIONS } from "@/lib/supplier-profile"
 
 type Categoria = { id: string; name: string; slug: string }
 
@@ -16,9 +17,9 @@ type Fornecedor = {
   bio: string | null
   cover_image_url: string | null
   whatsapp: string | null
-  price_min: number | null
-  price_max: number | null
-  agenda_aberta: boolean
+  investment_levels: string[] | null
+  service_city_ids: string[] | null
+  other_service_areas: string | null
   has_divine_seal: boolean
   portfolio: unknown
   services: string[] | null
@@ -49,12 +50,6 @@ function formatValidity(value: string | null): string {
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(date)
 }
 
-function priceLabel(min: number | null, max: number | null): string {
-  if (min != null && max != null) return `R$ ${(min / 1000).toFixed(0)}–${(max / 1000).toFixed(0)} mil`
-  if (min != null) return `A partir de R$ ${(min / 1000).toFixed(0)} mil`
-  return "Sob consulta"
-}
-
 export default function DetalheFornecedor() {
   const params = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
@@ -62,6 +57,7 @@ export default function DetalheFornecedor() {
   const [fornecedor, setFornecedor] = useState<Fornecedor | null>(null)
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [cidade, setCidade] = useState<{ name: string; state: string } | null>(null)
+  const [territorios, setTerritorios] = useState<string[]>([])
   const [validUntil, setValidUntil] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -72,7 +68,7 @@ export default function DetalheFornecedor() {
       if (!db) { setError("O Acervo está temporariamente indisponível."); setLoading(false); return }
 
       const result = await db.from("suppliers")
-        .select("id,slug,business_name,bio,cover_image_url,whatsapp,price_min,price_max,agenda_aberta,has_divine_seal,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,city_id")
+        .select("id,slug,business_name,bio,cover_image_url,whatsapp,investment_levels,service_city_ids,other_service_areas,has_divine_seal,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,city_id")
         .eq("slug", params.slug)
         .eq("is_active", true)
         .eq("has_divine_seal", true)
@@ -81,12 +77,16 @@ export default function DetalheFornecedor() {
       if (!result.data) { setError("Esta Referência não está disponível no Acervo."); setLoading(false); return }
 
       const item = result.data as Fornecedor
-      const [links, categoryResult, cityResult, publicationResult] = await Promise.all([
+      const [links, categoryResult, cityResult, publicationResult, territoryResult] = await Promise.all([
         db.from("supplier_categories").select("category_id").eq("supplier_id", item.id),
         db.from("categories").select("id,name,slug").order("name"),
         item.city_id ? db.from("cities").select("id,name,state").eq("id", item.city_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
         db.from("divine_publications").select("valid_until").eq("brand_name", item.business_name).eq("is_published", true).order("published_at", { ascending: false }).limit(1).maybeSingle(),
+        item.service_city_ids?.length ? db.from("cities").select("name,state").in("id", item.service_city_ids).order("name") : Promise.resolve({ data: [], error: null }),
       ])
+      if (links.error) throw links.error
+      if (territoryResult.error) throw territoryResult.error
+      setTerritorios((territoryResult.data || []).map(city => `${city.name}, ${city.state}`))
       if (categoryResult.error) throw categoryResult.error
       if (cityResult.error) throw cityResult.error
       if (publicationResult.error) throw publicationResult.error
@@ -102,7 +102,7 @@ export default function DetalheFornecedor() {
 
   function voltar() {
     const origem = searchParams.get("from")
-    router.push(origem && origem.startsWith("/diretorio") ? origem : "/diretorio")
+    router.push(origem && (origem === "/diretorio" || origem.startsWith("/diretorio?")) ? origem : "/diretorio")
   }
 
   const portfolio = fornecedor ? portfolioUrl(fornecedor.portfolio) : ""
@@ -143,7 +143,10 @@ export default function DetalheFornecedor() {
                 <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">{fornecedor.business_name}</h1>
                 <div className="mt-4 space-y-2 text-sm text-onix/60">
                   {cidade && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-bronze" /> {cidade.name}, {cidade.state}</p>}
-                  <p>{priceLabel(fornecedor.price_min, fornecedor.price_max)}</p>
+                  <p>Disponibilidade e proposta comercial sob consulta.</p>
+                  {!!fornecedor.investment_levels?.length && <p>Faixas de investimento: {INVESTMENT_OPTIONS.filter(option => fornecedor.investment_levels?.includes(option.value)).map(option => option.label).join(" · ")}. Informadas pelo profissional.</p>}
+                  {!!territorios.length && <p>Território atendido: {territorios.join(" · ")}.</p>}
+                  {fornecedor.other_service_areas && <p>Outras regiões: {fornecedor.other_service_areas}</p>}
                 </div>
                 {fornecedor.bio && <p className="mt-8 whitespace-pre-line text-base leading-relaxed text-onix/75">{fornecedor.bio}</p>}
                 {!!fornecedor.services?.length && <section className="mt-8"><h2 className="font-serif text-2xl">Principais serviços</h2><ul className="mt-3 list-inside list-disc space-y-1 text-sm text-onix/70">{fornecedor.services.map((service) => <li key={service}>{service}</li>)}</ul></section>}
@@ -165,3 +168,4 @@ export default function DetalheFornecedor() {
     </main>
   )
 }
+

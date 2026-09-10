@@ -14,6 +14,8 @@ import {
   SlidersHorizontal,
 } from "lucide-react"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
+import { INVESTMENT_OPTIONS } from "@/lib/supplier-profile"
+import { matchesAcervo, availableServices, servesCity, type AcervoFilters } from "@/lib/acervo-search"
 
 
 type CategoriaRef = { id?: string; name: string; slug: string }
@@ -28,19 +30,16 @@ type Fornecedor = {
   business_name: string
   cover_image_url: string | null
   whatsapp: string | null
-  price_min: number | null
-  price_max: number | null
-  agenda_aberta: boolean
+  services: string[] | null
+  investment_levels: string[] | null
+  service_city_ids: string[] | null
   has_divine_seal: boolean
   city_id: string | null
   city: { name: string; state: string; slug: string } | null
   categories: CategoriaRef[] | CategoriaRef | null
 }
 
-type Filtros = {
-  categoria: string
-  cidade: string
-}
+type Filtros = AcervoFilters
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -72,14 +71,6 @@ function fornecedorNoLocal(fornecedor: Fornecedor, localInformado: string): bool
   return local === cidade || local.includes(cidade) || cidade.includes(local)
 }
 
-function formataFaixa(f: Fornecedor): string {
-  if (f.price_min != null && f.price_max != null) {
-    return `R$ ${(f.price_min / 1000).toFixed(0)}–${(f.price_max / 1000).toFixed(0)} mil`
-  }
-  if (f.price_min != null) return `A partir de R$ ${(f.price_min / 1000).toFixed(0)} mil`
-  return "Sob consulta"
-}
-
 function linkZap(f: Fornecedor): string | undefined {
   const numero = (f.whatsapp || "").replace(/\D/g, "")
   const texto = encodeURIComponent(
@@ -102,6 +93,7 @@ function Chip({
   return (
     <button
       onClick={onClick}
+      aria-pressed={ativo}
       className={`rounded-full border px-3 py-1.5 text-xs transition ${
         ativo
           ? "border-onix bg-onix text-alabastro"
@@ -143,6 +135,7 @@ function CartaoFornecedor({
   }
 
   function abrirComTeclado(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.target !== event.currentTarget) return
     if (event.key !== "Enter" && event.key !== " ") return
     event.preventDefault()
     sessionStorage.setItem("divine-acervo-scroll", String(window.scrollY))
@@ -183,7 +176,7 @@ function CartaoFornecedor({
             <MapPin className="h-3 w-3" /> {local}
           </span>
           <span className="rounded-full bg-alabastro/95 px-2.5 py-1 text-[10px] font-medium text-onix">
-            {formataFaixa(fornecedor)}
+            Sob consulta
           </span>
         </div>
       </div>
@@ -248,12 +241,21 @@ function Diretorio() {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const [favoritos, setFavoritos] = useState<Set<string>>(new Set())
   const [passaporte, setPassaporte] = useState<{ local: string } | null>(null)
+  const [personalizacaoCarregada, setPersonalizacaoCarregada] = useState(false)
   const [aviso, setAviso] = useState("")
   const pendingFavorites = useRef(new Set<string>())
-  const [filtros, setFiltros] = useState<Filtros>({
+  const filtros: Filtros = {
     categoria: params.get("categoria") || "",
     cidade: params.get("cidade") || "",
-  })
+    servico: params.get("servico") || "",
+    investimento: params.get("investimento") || "",
+  }
+
+  function setFiltros(next: Filtros) {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(next)) if (value) query.set(key, value)
+    router.replace(query.size ? `/diretorio?${query}` : "/diretorio", { scroll: false })
+  }
 
   useEffect(() => {
     async function carregar() {
@@ -263,7 +265,7 @@ function Diretorio() {
         supabase
           .from("suppliers")
           .select(
-            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, agenda_aberta, has_divine_seal, city_id"
+            "id, slug, business_name, cover_image_url, whatsapp, services, investment_levels, service_city_ids, has_divine_seal, city_id"
           )
           .eq("is_active", true)
           .eq("has_divine_seal", true),
@@ -271,7 +273,7 @@ function Diretorio() {
         supabase.from("categories").select("id, name, slug").order("name"),
         supabase.from("cities").select("id, name, state, slug").order("name"),
       ])
-      if (resFornecedores.error) {
+      if (resFornecedores.error || resVinculos.error || resCategorias.error || resCidades.error) {
         console.error("Falha ao carregar fornecedores do Acervo", resFornecedores.error)
         setErro(true)
       }
@@ -315,18 +317,19 @@ function Diretorio() {
   }, [])
 
   useEffect(() => {
+    if (carregando || !personalizacaoCarregada) return
     const savedScroll = sessionStorage.getItem("divine-acervo-scroll")
     if (!savedScroll) return
     const scrollY = Number(savedScroll)
     sessionStorage.removeItem("divine-acervo-scroll")
     if (!Number.isFinite(scrollY)) return
     requestAnimationFrame(() => window.scrollTo(0, scrollY))
-  }, [carregando])
+  }, [carregando, personalizacaoCarregada])
 
   // Carrega os favoritos existentes da noiva (se logada)
   useEffect(() => {
     const supabase = getSupabase()
-    if (!supabase) return
+    if (!supabase) { setPersonalizacaoCarregada(true); return }
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         setPassaporte(null)
@@ -334,22 +337,24 @@ function Diretorio() {
       }
       const { data: perfil } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role,location")
         .eq("id", data.user.id)
         .maybeSingle()
-      const ehNoivo = perfil?.role === "couple" || data.user.user_metadata?.role === "couple"
+      const { data: perfilFornecedor, error: erroFornecedor } = await supabase.from("suppliers").select("id").eq("owner_user_id", data.user.id).limit(1)
+      if (erroFornecedor) throw erroFornecedor
+      const ehNoivo = !perfilFornecedor?.length && (["couple", "noiva", "noivo"].includes(perfil?.role || "") || data.user.user_metadata?.role === "couple")
       if (!ehNoivo) {
         setPassaporte(null)
         setFavoritos(new Set())
         return
       }
-      setPassaporte({ local: String(data.user.user_metadata?.location || "") })
+      setPassaporte({ local: String(perfil?.location ?? data.user.user_metadata?.location ?? "") })
       const { data: favs } = await supabase
         .from("favorites")
         .select("supplier_id")
         .eq("user_id", data.user.id)
       if (favs) setFavoritos(new Set(favs.map((f) => f.supplier_id)))
-    }).catch(() => setAviso("Não foi possível carregar seus favoritos. Tente novamente."))
+    }).catch(() => setAviso("Não foi possível carregar seus favoritos. Tente novamente.")).finally(() => setPersonalizacaoCarregada(true))
   }, [])
 
   useEffect(() => {
@@ -360,14 +365,7 @@ function Diretorio() {
 
   const lista = useMemo(() => {
     return fornecedores
-      .filter((f) => {
-        if (filtros.categoria) {
-          const slugs = normalizaCategorias(f.categories).map((c) => c.slug)
-          if (!slugs.includes(filtros.categoria)) return false
-        }
-        if (filtros.cidade && f.city?.slug !== filtros.cidade) return false
-        return true
-      })
+      .filter(f => matchesAcervo(f, filtros, cidades))
       .sort((a, b) => {
         // Para casais logados, interesses salvos vêm primeiro; em seguida,
         // priorizamos referências na cidade informada no Passaporte.
@@ -376,14 +374,15 @@ function Diretorio() {
           const favoritoB = favoritos.has(b.id) ? 1 : 0
           if (favoritoA !== favoritoB) return favoritoB - favoritoA
 
-          const localA = fornecedorNoLocal(a, passaporte.local) ? 1 : 0
-          const localB = fornecedorNoLocal(b, passaporte.local) ? 1 : 0
+          const cidadeCasal = cidades.find(city => normalizaTexto(city.name) === normalizaTexto(passaporte.local) || normalizaTexto(`${city.name} ${city.state}`) === normalizaTexto(passaporte.local))
+          const localA = (cidadeCasal ? servesCity(a, cidadeCasal.id) : fornecedorNoLocal(a, passaporte.local)) ? 1 : 0
+          const localB = (cidadeCasal ? servesCity(b, cidadeCasal.id) : fornecedorNoLocal(b, passaporte.local)) ? 1 : 0
           if (localA !== localB) return localB - localA
         }
 
         return a.business_name.localeCompare(b.business_name, "pt-BR")
       })
-  }, [fornecedores, filtros, favoritos, passaporte])
+  }, [fornecedores, filtros.categoria, filtros.cidade, filtros.servico, filtros.investimento, favoritos, passaporte, cidades])
 
   const grupos = useMemo(() => {
     if (passaporte) {
@@ -393,8 +392,9 @@ function Diretorio() {
     const porCategoria = new Map<string, { key: string; label: string; items: Fornecedor[] }>()
     for (const fornecedor of lista) {
       const categoriasDoFornecedor = normalizaCategorias(fornecedor.categories)
-      const categoriasParaExibir = categoriasDoFornecedor.length
-        ? categoriasDoFornecedor
+      const categoriasFiltradas = filtros.categoria ? categoriasDoFornecedor.filter(category => category.slug === filtros.categoria) : categoriasDoFornecedor
+      const categoriasParaExibir = categoriasFiltradas.length
+        ? categoriasFiltradas
         : [{ slug: "sem-categoria", name: "Outras referências" }]
 
       for (const categoria of categoriasParaExibir) {
@@ -408,10 +408,12 @@ function Diretorio() {
     return Array.from(porCategoria.values()).sort((a, b) =>
       a.label.localeCompare(b.label, "pt-BR")
     )
-  }, [lista, passaporte])
+  }, [lista, passaporte, filtros.categoria])
+
+  const servicosDisponiveis = useMemo(() => availableServices(fornecedores, filtros.categoria), [fornecedores, filtros.categoria])
 
   function limparFiltros() {
-    setFiltros({ categoria: "", cidade: "" })
+    setFiltros({ categoria: "", cidade: "", servico: "", investimento: "" })
   }
 
   async function alternarFavorito(id: string) {
@@ -473,6 +475,8 @@ function Diretorio() {
             </p>
           </div>
           <button
+            aria-expanded={filtrosAbertos}
+            aria-controls="filtros-acervo"
             onClick={() => setFiltrosAbertos((v) => !v)}
             className="flex items-center gap-2 rounded-full border border-linha bg-white px-4 py-2.5 text-xs uppercase tracking-[0.2em] lg:hidden"
           >
@@ -482,21 +486,21 @@ function Diretorio() {
 
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
           {/* Filtros enxutos na lateral */}
-          <aside className={`${filtrosAbertos ? "block" : "hidden"} lg:block`}>
+          <aside id="filtros-acervo" className={`${filtrosAbertos ? "block" : "hidden"} lg:block`}>
             <div className="space-y-6 rounded-2xl border border-linha bg-white p-5 lg:sticky lg:top-24">
               <div>
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/40">
                   Categoria
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  <Chip ativo={filtros.categoria === ""} onClick={() => setFiltros({ ...filtros, categoria: "" })}>
+                  <Chip ativo={filtros.categoria === ""} onClick={() => setFiltros({ ...filtros, categoria: "", servico: "" })}>
                     Todas
                   </Chip>
                   {categorias.map((c) => (
                     <Chip
                       key={c.slug}
                       ativo={filtros.categoria === c.slug}
-                      onClick={() => setFiltros({ ...filtros, categoria: c.slug })}
+                      onClick={() => setFiltros({ ...filtros, categoria: c.slug, servico: "" })}
                     >
                       {c.name}
                     </Chip>
@@ -506,7 +510,7 @@ function Diretorio() {
 
               <div>
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/40">
-                  Cidade polo
+                  Cidade do casamento
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <Chip ativo={filtros.cidade === ""} onClick={() => setFiltros({ ...filtros, cidade: "" })}>
@@ -523,6 +527,24 @@ function Diretorio() {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label htmlFor="filtro-servico" className="mb-3 block text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/60">Serviço oferecido</label>
+                <select id="filtro-servico" value={filtros.servico} onChange={event => setFiltros({ ...filtros, servico: event.target.value })} className="w-full rounded-lg border border-linha bg-white px-3 py-3 text-sm focus:border-bronze">
+                  <option value="">Todos os serviços</option>
+                  {filtros.servico && !servicosDisponiveis.includes(filtros.servico) && <option value={filtros.servico}>{filtros.servico}</option>}
+                  {servicosDisponiveis.map(service => <option key={service} value={service}>{service}</option>)}
+                </select>
+                <p className="mt-2 text-xs leading-relaxed text-onix/60">Serviços informados pelas Referências desta categoria.</p>
+              </div>
+              <fieldset>
+                <legend className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/60">Faixa de investimento</legend>
+                <div className="flex flex-wrap gap-1.5">
+                  <Chip ativo={!filtros.investimento} onClick={() => setFiltros({ ...filtros, investimento: "" })}>Todas</Chip>
+                  {INVESTMENT_OPTIONS.map(option => <Chip key={option.value} ativo={filtros.investimento === option.value} onClick={() => setFiltros({ ...filtros, investimento: option.value })}>{option.label}</Chip>)}
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-onix/60">Faixas declaradas pelos profissionais. A proposta e a disponibilidade são confirmadas em contato. A Chancela é a mesma em todas as faixas.</p>
+              </fieldset>
 
               <button
                 onClick={limparFiltros}
@@ -549,9 +571,9 @@ function Diretorio() {
               </div>
             ) : erro ? null : lista.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-linha bg-white/60 p-12 text-center">
-                <p className="font-serif text-2xl">Nenhuma obra com esses filtros</p>
+                <p className="font-serif text-2xl">Nenhuma Referência com esses filtros</p>
                 <p className="mt-2 text-sm text-onix/50">
-                  Ajuste a curadoria para ver o acervo completo.
+                  Experimente ampliar a cidade, o serviço ou a faixa de investimento.
                 </p>
                 <button
                   onClick={limparFiltros}
@@ -605,3 +627,4 @@ export default function PaginaDiretorio() {
     </Suspense>
   )
 }
+

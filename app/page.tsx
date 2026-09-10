@@ -158,9 +158,9 @@ export default function Page() {
             <h2 className="mt-3 font-serif text-4xl">Reconhecimento com critério.</h2>
             <p className="mt-5 text-base leading-relaxed text-onix/80">Cada Referência passa por uma avaliação do trabalho, da reputação, da experiência do cliente, da identidade e do profissionalismo.</p>
             <ol className="mt-7 space-y-5 text-base leading-relaxed">
-              <li><strong className="font-medium">01 · Conhecer.</strong> Portfólio, atuação e referências ajudam a compreender o trabalho.</li>
-              <li><strong className="font-medium">02 · Avaliar.</strong> A decisão é humana e editorial. Tempo de mercado, sozinho, não determina aprovação.</li>
-              <li><strong className="font-medium">03 · Acompanhar.</strong> O reconhecimento tem validade e está sujeito a reavaliação.</li>
+              <li><strong className="font-medium">01 · Descobrir.</strong> Conhecemos a trajetória, a assinatura e o cuidado presentes em cada trabalho.</li>
+              <li><strong className="font-medium">02 · Selecionar.</strong> Qualidade, confiança e experiência orientam uma escolha criteriosa da Curadoria DIVINE.</li>
+              <li><strong className="font-medium">03 · Zelar.</strong> Acompanhamos nossas Referências e reavaliamos periodicamente os critérios que sustentam a Chancela.</li>
             </ol>
             <p className="mt-7 border-t border-linha pt-5 text-sm leading-relaxed text-onix/75">A chancela não se compra. Serviços comerciais são opcionais e não alteram a decisão editorial.</p>
             <Link href="/aplicar" className="mt-5 inline-block py-3 text-sm underline underline-offset-4">Sou fornecedor e quero apresentar meu trabalho</Link>
@@ -266,3 +266,4 @@ export default function Page() {
     </div>
   )
 }
+

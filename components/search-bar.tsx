@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronDown, MapPin, Search, Sparkles } from "lucide-react"
 import { getSupabase } from "@/lib/supabase"
+import { INVESTMENT_OPTIONS } from "@/lib/supplier-profile"
+import { availableServices, type SearchSupplier } from "@/lib/acervo-search"
 
 
 type Opcao = { value: string; label: string }
@@ -74,6 +76,9 @@ function CampoSelecao({
 export default function SearchBar() {
   const router = useRouter()
   const [categoria, setCategoria] = useState("")
+  const [servico, setServico] = useState("")
+  const [investimento, setInvestimento] = useState("")
+  const [ofertas, setOfertas] = useState<SearchSupplier[]>([])
   const [cidade, setCidade] = useState("")
   const [categorias, setCategorias] = useState<Opcao[]>(CATEGORIAS_FALLBACK)
   const [cidades, setCidades] = useState<Opcao[]>(CIDADES_FALLBACK)
@@ -82,10 +87,15 @@ export default function SearchBar() {
     async function carregar() {
       const supabase = getSupabase()
       if (!supabase) return
-      const [cats, cts] = await Promise.all([
-        supabase.from("categories").select("name, slug").order("name"),
+      const [cats, cts, suppliers, links] = await Promise.all([
+        supabase.from("categories").select("id, name, slug").order("name"),
         supabase.from("cities").select("name, state, slug").order("name"),
+        supabase.from("suppliers").select("id,city_id,services").eq("is_active", true).eq("has_divine_seal", true),
+        supabase.from("supplier_categories").select("supplier_id,category_id"),
       ])
+      if (suppliers.data && links.data && cats.data) {
+        setOfertas(suppliers.data.map(supplier => ({ ...supplier, categories: cats.data.filter(category => links.data.some(link => link.supplier_id === supplier.id && link.category_id === category.id)).map(category => ({ slug: category.slug })) })))
+      }
       if (cats.data && cats.data.length > 0) {
         setCategorias(cats.data.map((c) => ({ value: c.slug, label: c.name })))
       }
@@ -100,6 +110,8 @@ export default function SearchBar() {
     const p = new URLSearchParams()
     if (categoria) p.set("categoria", categoria)
     if (cidade) p.set("cidade", cidade)
+    if (servico) p.set("servico", servico)
+    if (investimento) p.set("investimento", investimento)
     const q = p.toString()
     router.push(q ? `/diretorio?${q}` : "/diretorio")
   }
@@ -115,12 +127,12 @@ export default function SearchBar() {
           placeholder="Tipo de fornecedor"
           valor={categoria}
           opcoes={categorias}
-          aoSelecionar={setCategoria}
+          aoSelecionar={value => { setCategoria(value); setServico("") }}
         />
         <div className="hidden h-8 w-px bg-linha sm:block" />
         <CampoSelecao
           icone={<MapPin className="h-4 w-4" />}
-          placeholder="Cidade"
+          placeholder="Cidade do casamento"
           valor={cidade}
           opcoes={cidades}
           aoSelecionar={setCidade}
@@ -133,6 +145,16 @@ export default function SearchBar() {
           <Search className="h-4 w-4" />
         </button>
       </div>
+      <details className="mt-3 rounded-2xl border border-linha bg-white/95 px-4 py-3">
+        <summary className="cursor-pointer text-sm text-onix/75">Refinar por serviço e investimento</summary>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <CampoSelecao icone={<Sparkles className="h-4 w-4" />} placeholder="Todos os serviços" valor={servico} opcoes={availableServices(ofertas, categoria).map(service => ({ value: service, label: service }))} aoSelecionar={setServico} />
+          <CampoSelecao icone={<Sparkles className="h-4 w-4" />} placeholder="Todas as faixas" valor={investimento} opcoes={INVESTMENT_OPTIONS.map(option => ({ value: option.value, label: option.label }))} aoSelecionar={setInvestimento} />
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-onix/60">Faixas de investimento informadas pelos profissionais. Proposta e disponibilidade sob consulta.</p>
+        <button onClick={buscar} className="mt-3 rounded-lg bg-onix px-4 py-3 text-sm text-alabastro">Ver referências</button>
+      </details>
     </section>
   )
 }
+

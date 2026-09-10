@@ -17,7 +17,9 @@ import {
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 
-type CategoriaRef = { name: string; slug: string }
+type CategoriaRef = { id?: string; name: string; slug: string }
+
+type VinculoCategoria = { supplier_id: string; category_id: string }
 
 type Fornecedor = {
   id: string
@@ -266,19 +268,49 @@ function Diretorio() {
     async function carregar() {
       const supabase = getSupabase()
       if (!supabase) { setErro(true); setCarregando(false); return }
-      const [resFornecedores, resCategorias, resCidades] = await Promise.all([
+      const [resFornecedores, resVinculos, resCategorias, resCidades] = await Promise.all([
         supabase
           .from("suppliers")
           .select(
-            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city(name, state, slug), categories(name, slug)"
+            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city(name, state, slug)"
           )
           .eq("is_active", true)
           .eq("has_divine_seal", true),
-        supabase.from("categories").select("name, slug").order("name"),
+        supabase.from("supplier_categories").select("supplier_id, category_id"),
+        supabase.from("categories").select("id, name, slug").order("name"),
         supabase.from("cities").select("name, state, slug").order("name"),
       ])
-      if (resFornecedores.error) setErro(true)
-      if (resFornecedores.data) setFornecedores(resFornecedores.data as unknown as Fornecedor[])
+      if (resFornecedores.error) {
+        console.error("Falha ao carregar fornecedores do Acervo", resFornecedores.error)
+        setErro(true)
+      }
+
+      if (resFornecedores.data) {
+        // A relação many-to-many é montada explicitamente. Isso evita que uma
+        // falha no relacionamento aninhado do PostgREST impeça o card inteiro
+        // de aparecer no Acervo.
+        const categoriasPorId = new Map(
+          (resCategorias.data || []).map((categoria) => [
+            categoria.id,
+            { id: categoria.id, name: categoria.name, slug: categoria.slug },
+          ])
+        )
+        const categoriasPorFornecedor = new Map<string, CategoriaRef[]>()
+        for (const vinculo of (resVinculos.data || []) as VinculoCategoria[]) {
+          const categoria = categoriasPorId.get(vinculo.category_id)
+          if (!categoria) continue
+          const atuais = categoriasPorFornecedor.get(vinculo.supplier_id) || []
+          atuais.push(categoria)
+          categoriasPorFornecedor.set(vinculo.supplier_id, atuais)
+        }
+
+        setFornecedores(
+          resFornecedores.data.map((fornecedor) => ({
+            ...(fornecedor as unknown as Fornecedor),
+            categories: categoriasPorFornecedor.get(fornecedor.id) || [],
+          }))
+        )
+      }
       if (resCategorias.data) setCategorias(resCategorias.data as CategoriaRef[])
       if (resCidades.data) setCidades(resCidades.data as { name: string; state: string; slug: string }[])
       setCarregando(false)

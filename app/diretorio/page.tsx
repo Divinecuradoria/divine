@@ -6,7 +6,6 @@ import { Header } from "@/components/Header"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
-  CalendarCheck,
   Heart,
   MapPin,
   MessageCircle,
@@ -41,25 +40,7 @@ type Fornecedor = {
 type Filtros = {
   categoria: string
   cidade: string
-  faixa: string
-  soComAgenda: boolean
 }
-
-const FAIXAS: { id: string; label: string; teste: (f: Fornecedor) => boolean }[] = [
-  { id: "", label: "Qualquer preço", teste: () => true },
-  { id: "ate-5", label: "Até R$ 5 mil", teste: (f) => (f.price_min ?? 0) <= 5000 },
-  {
-    id: "5-15",
-    label: "R$ 5 mil – 15 mil",
-    teste: (f) => (f.price_min ?? 0) <= 15000 && (f.price_max ?? Infinity) >= 5000,
-  },
-  {
-    id: "15-30",
-    label: "R$ 15 mil – 30 mil",
-    teste: (f) => (f.price_min ?? 0) <= 30000 && (f.price_max ?? Infinity) >= 15000,
-  },
-  { id: "30-mais", label: "Acima de R$ 30 mil", teste: (f) => (f.price_max ?? 0) >= 30000 },
-]
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -237,10 +218,6 @@ function CartaoFornecedor({
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <h3 className="truncate font-serif text-xl leading-tight">{fornecedor.business_name}</h3>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-onix/50">
-            <CalendarCheck className={`h-3.5 w-3.5 ${fornecedor.agenda_aberta ? "text-bronze" : "text-onix/30"}`} />
-            {fornecedor.agenda_aberta ? "Agenda aberta" : "Lista de espera"}
-          </p>
         </div>
 
         {/* Regra de ouro: WhatsApp a um clique, direto do card */}
@@ -276,8 +253,6 @@ function Diretorio() {
   const [filtros, setFiltros] = useState<Filtros>({
     categoria: params.get("categoria") || "",
     cidade: params.get("cidade") || "",
-    faixa: "",
-    soComAgenda: false,
   })
 
   useEffect(() => {
@@ -384,7 +359,6 @@ function Diretorio() {
   }, [aviso])
 
   const lista = useMemo(() => {
-    const faixaSel = FAIXAS.find((x) => x.id === filtros.faixa) ?? FAIXAS[0]
     return fornecedores
       .filter((f) => {
         if (filtros.categoria) {
@@ -392,8 +366,7 @@ function Diretorio() {
           if (!slugs.includes(filtros.categoria)) return false
         }
         if (filtros.cidade && f.city?.slug !== filtros.cidade) return false
-        if (filtros.soComAgenda && !f.agenda_aberta) return false
-        return faixaSel.teste(f)
+        return true
       })
       .sort((a, b) => {
         // Para casais logados, interesses salvos vêm primeiro; em seguida,
@@ -438,7 +411,7 @@ function Diretorio() {
   }, [lista, passaporte])
 
   function limparFiltros() {
-    setFiltros({ categoria: "", cidade: "", faixa: "", soComAgenda: false })
+    setFiltros({ categoria: "", cidade: "" })
   }
 
   async function alternarFavorito(id: string) {
@@ -550,43 +523,6 @@ function Diretorio() {
                   ))}
                 </div>
               </div>
-
-              <div>
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/40">
-                  Preço médio
-                </p>
-                <div className="space-y-1">
-                  {FAIXAS.map((fx) => (
-                    <button
-                      key={fx.id}
-                      onClick={() => setFiltros({ ...filtros, faixa: fx.id })}
-                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                        filtros.faixa === fx.id ? "bg-onix text-alabastro" : "hover:bg-white/60"
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          filtros.faixa === fx.id ? "bg-bronze" : "bg-linha"
-                        }`}
-                      />
-                      {fx.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <label className="flex cursor-pointer items-center justify-between rounded-xl border border-linha p-3">
-                <span className="flex items-center gap-2 text-sm">
-                  <CalendarCheck className="h-4 w-4 text-bronze" /> Só com agenda aberta
-                </span>
-                <input
-                  type="checkbox"
-                  checked={filtros.soComAgenda}
-                  onChange={(e) => setFiltros({ ...filtros, soComAgenda: e.target.checked })}
-                  className="peer sr-only"
-                />
-                <span className="relative h-5 w-9 shrink-0 rounded-full bg-linha transition after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:bg-bronze peer-checked:after:translate-x-4" />
-              </label>
 
               <button
                 onClick={limparFiltros}

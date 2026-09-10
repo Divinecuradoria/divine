@@ -21,7 +21,7 @@ const CATEGORIAS_FALLBACK: Opcao[] = [
   { value: "alta-gastronomia", label: "Alta Gastronomia" },
   { value: "alta-confeitaria", label: "Alta Confeitaria" },
   { value: "beleza-styling", label: "Beleza & Styling" },
-  { value: "curadoria-musical", label: "Curadoria Musical" },
+  { value: "curadoria-musical", label: "Curadoria Musical e Efeitos" },
   { value: "papelaria-fina-identidade", label: "Papelaria Fina & Identidade" },
   { value: "coquetelaria", label: "Coquetelaria" },
   { value: "joalheria-nupcial", label: "Joalheria Nupcial" },
@@ -157,4 +157,5 @@ export default function SearchBar() {
     </section>
   )
 }
+
 

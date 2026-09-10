@@ -139,7 +139,7 @@ export default function DetalheFornecedor() {
                     <p className="mt-1 text-sm leading-relaxed text-onix/70">Reconhecimento editorial da Curadoria Nupcial.</p>
                     {formatValidity(validUntil) && <p className="mt-1 text-xs text-onix/60">Válida até {formatValidity(validUntil)}</p>}
                   </div>
-                </div>
+                </div>}
                 <h1 className="mt-5 font-serif text-4xl leading-tight sm:text-5xl">{fornecedor.business_name}</h1>
                 <div className="mt-4 space-y-2 text-sm text-onix/60">
                   {cidade && <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-bronze" /> {cidade.name}, {cidade.state}</p>}

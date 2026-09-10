@@ -52,7 +52,7 @@ function PainelPassaporte() {
       const db = getSupabase()
       if (!db) throw new Error(ACCESS_UNAVAILABLE)
       const auth = await db.auth.getUser()
-      if (!auth.data.user) return
+      if (!auth.data.user) throw new Error("Sua sessão terminou. Entre novamente para continuar.")
       const user = auth.data.user
       const meta = user.user_metadata || {}
       const [perfilResult, favResult] = await Promise.all([
@@ -166,11 +166,42 @@ function PainelPassaporte() {
     catch { setErro("Não foi possível atualizar a senha.") } finally { setAlterandoSenha(false) }
   }
 
+  const dataCasamento = perfil?.wedding_date ? new Date(`${perfil.wedding_date}T12:00:00`) : null
+  const dataResumo = dataCasamento && !Number.isNaN(dataCasamento.getTime())
+    ? new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" }).format(dataCasamento)
+    : "Data a definir"
+
   return <main className="min-h-screen bg-alabastro text-onix"><div className="mx-auto max-w-5xl">
-    <p className="text-sm uppercase tracking-widest text-bronze">Área dos noivos</p><h1 className="mt-3 font-serif text-4xl">Meu Passaporte DIVINE</h1>
-    {mensagem && <p role="status" className="mt-6 rounded-lg border border-green-300 bg-green-50 p-4 text-green-900">{mensagem}</p>}{erro && <p role="alert" className="mt-6 rounded-lg border border-red-300 p-4 text-red-800">{erro}</p>}
-    {carregando ? <p className="mt-8">Carregando seu Passaporte…</p> : <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
-      <div className="space-y-10"><form onSubmit={salvarPerfil} className="space-y-5 border-t border-linha pt-6"><h2 className="font-serif text-2xl">Dados do casamento</h2>
+    <p className="text-sm uppercase tracking-widest text-bronze">Área dos casais</p>
+    <h1 className="mt-3 font-serif text-4xl">Meu Passaporte DIVINE</h1>
+    <p className="mt-4 max-w-2xl text-base leading-relaxed text-onix/75">Um lugar para reunir suas referências e organizar as próximas escolhas do casamento.</p>
+    {mensagem && <p role="status" className="mt-6 rounded-lg border border-green-300 bg-green-50 p-4 text-green-900">{mensagem}</p>}
+    {erro && <p role="alert" className="mt-6 rounded-lg border border-red-300 p-4 text-red-800">{erro}</p>}
+    {carregando ? <p role="status" className="mt-8">Carregando seu Passaporte…</p> : !userId ? (
+      <Link href="/entrar?next=/passaporte" className="mt-8 inline-block rounded-lg bg-onix px-6 py-4 text-sm text-alabastro">Entrar para abrir meu Passaporte</Link>
+    ) : <div className="mt-8 space-y-12">
+      <section aria-label="Resumo do casamento" className="grid gap-6 rounded-xl border border-linha bg-white p-6 sm:grid-cols-[1fr_auto] sm:p-8">
+        <div>
+          <h2 className="font-serif text-3xl">{perfil?.full_name || "O casamento de vocês"}</h2>
+          <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-3">
+            <div><dt className="text-onix/65">Data</dt><dd className="mt-1">{dataResumo}</dd></div>
+            <div><dt className="text-onix/65">Local</dt><dd className="mt-1">{perfil?.location || "Local a definir"}</dd></div>
+            <div><dt className="text-onix/65">Convidados</dt><dd className="mt-1">{perfil?.guests || "A definir"}</dd></div>
+          </dl>
+        </div>
+        <div className="sm:text-right"><p className="font-serif text-4xl">{favoritos.length}</p><p className="mt-1 text-sm text-onix/65">{favoritos.length === 1 ? "Referência salva" : "Referências salvas"}</p></div>
+      </section>
+      <section aria-labelledby="proximo-passo-titulo" className="border-l-2 border-bronze pl-6">
+        <h2 id="proximo-passo-titulo" className="font-serif text-2xl">{favoritos.length ? "Retomem suas escolhas." : "Comecem por uma referência."}</h2>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-onix/75">{favoritos.length ? "Conheçam os trabalhos salvos abaixo e conversem com os profissionais para confirmar os detalhes do evento." : "Visitem o Acervo e toquem no coração dos trabalhos que chamarem sua atenção. Eles ficarão reunidos aqui por categoria."}</p>
+        <Link href="/diretorio" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-onix px-5 py-3 text-sm text-alabastro"><CalendarDays className="h-4 w-4" aria-hidden="true" />Explorar o Acervo</Link>
+      </section>
+      <section id="referencias-salvas" aria-labelledby="favoritos-titulo" className="scroll-mt-28 border-t border-linha pt-8"><h2 id="favoritos-titulo" className="font-serif text-3xl">Referências salvas</h2><p className="mt-2 text-sm text-onix/60">Seus fornecedores favoritos organizados por categoria.</p>{!favoritos.length ? <p className="mt-6 text-sm text-onix/60">Você ainda não salvou nenhuma Referência. <Link className="underline" href="/diretorio">Explorar o Acervo</Link></p> : <div className="mt-6 space-y-8">{grupos.map((grupo) => <section key={grupo.nome}><h3 className="mb-3 font-serif text-xl">{grupo.nome}</h3><div className="grid gap-4 sm:grid-cols-2">{grupo.itens.map((item) => <Link key={item.id} href={`/diretorio/${item.slug}`} className="overflow-hidden rounded-xl border border-linha bg-white"><div className="aspect-[4/3] bg-onix">{item.cover_image_url && <img src={item.cover_image_url} alt="" className="h-full w-full object-cover" />}</div><div className="p-3"><p className="font-serif text-lg">{item.business_name}</p>{item.city && <p className="mt-1 flex items-center gap-1 text-xs text-onix/60"><MapPin className="h-3 w-3" />{item.city.name}, {item.city.state}</p>}</div></Link>)}</div></section>)}</div>}</section>
+      <details id="configuracoes" className="scroll-mt-28 rounded-xl border border-linha bg-white p-6 sm:p-8">
+        <summary className="cursor-pointer rounded py-2 font-serif text-2xl focus-visible:outline-2 focus-visible:outline-bronze focus-visible:outline-offset-4">Configurações do Passaporte</summary>
+        <p className="mt-3 text-sm leading-relaxed text-onix/70">Alterem os dados do casamento, a foto do casal e a senha de acesso.</p>
+        <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_320px]">
+          <form onSubmit={salvarPerfil} className="space-y-5 border-t border-linha pt-6"><h2 className="font-serif text-2xl">Dados do casamento</h2>
         <label className="block text-sm">Nome do casal<input required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} className={fieldClass} /></label>
         <label className="block text-sm">WhatsApp<input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className={fieldClass} /></label>
         <label className="block text-sm">Data do casamento<input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} className={fieldClass} /></label>
@@ -179,10 +210,10 @@ function PainelPassaporte() {
         <label className="block text-sm">Como vocês imaginam o grande dia?<textarea rows={4} value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} className={fieldClass} /></label>
         <button disabled={salvando} className="inline-flex items-center gap-2 rounded-lg bg-onix px-5 py-3 text-sm text-alabastro disabled:opacity-60"><Save className="h-4 w-4" />{salvando ? "Salvando…" : "Salvar dados"}</button>
       </form>
-      <section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Referências salvas</h2><p className="mt-2 text-sm text-onix/60">Seus fornecedores favoritos organizados por categoria.</p>{!favoritos.length ? <p className="mt-6 text-sm text-onix/60">Você ainda não salvou nenhuma Referência. <Link className="underline" href="/diretorio">Explorar o Acervo</Link></p> : <div className="mt-6 space-y-8">{grupos.map((grupo) => <section key={grupo.nome}><h3 className="mb-3 font-serif text-xl">{grupo.nome}</h3><div className="grid gap-4 sm:grid-cols-2">{grupo.itens.map((item) => <Link key={item.id} href={`/diretorio/${item.slug}`} className="overflow-hidden rounded-xl border border-linha bg-white"><div className="aspect-[4/3] bg-onix">{item.cover_image_url && <img src={item.cover_image_url} alt="" className="h-full w-full object-cover" />}</div><div className="p-3"><p className="font-serif text-lg">{item.business_name}</p>{item.city && <p className="mt-1 flex items-center gap-1 text-xs text-onix/60"><MapPin className="h-3 w-3" />{item.city.name}, {item.city.state}</p>}</div></Link>)}</div></section>)}</div>}</section>
-      </div>
-      <aside className="space-y-8"><section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Foto do casal</h2>{fotoUrl ? <img src={fotoUrl} alt="Foto do casal" className="mt-4 aspect-[4/3] w-full rounded-xl object-cover" /> : <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-linha text-onix/40"><ImagePlus className="h-8 w-8" /></div>}<label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm">{enviandoFoto ? "Compactando e enviando…" : "Enviar foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={enviarFoto} disabled={enviandoFoto} className="sr-only" /></label><p className="mt-2 text-xs text-onix/60">A imagem é compactada automaticamente antes do armazenamento.</p></section>
-      <section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Acesso</h2><p className="mt-3 text-sm text-onix/60">E-mail</p><p className="break-all text-sm">{email}</p><form onSubmit={trocarSenha} className="mt-5 space-y-4"><label className="block text-sm">Nova senha<input type="password" minLength={8} value={senha} onChange={(e) => setSenha(e.target.value)} className={fieldClass} /></label><label className="block text-sm">Confirmar nova senha<input type="password" minLength={8} value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className={fieldClass} /></label><button disabled={alterandoSenha || !senha || !confirmacao} className="inline-flex items-center gap-2 rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50"><LockKeyhole className="h-4 w-4" />{alterandoSenha ? "Atualizando…" : "Atualizar senha"}</button></form></section><Link href="/diretorio" className="inline-flex items-center gap-2 rounded-lg bg-bronze px-5 py-3 text-sm text-alabastro"><CalendarDays className="h-4 w-4" />Explorar o Acervo</Link></aside>
+          <aside className="space-y-8"><section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Foto do casal</h2>{fotoUrl ? <img src={fotoUrl} alt="Foto do casal" className="mt-4 aspect-[4/3] w-full rounded-xl object-cover" /> : <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-linha text-onix/40"><ImagePlus className="h-8 w-8" /></div>}<label className="mt-4 block cursor-pointer focus-within:outline-2 focus-within:outline-bronze rounded-lg border border-onix px-4 py-3 text-center text-sm">{enviandoFoto ? "Compactando e enviando…" : "Enviar foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={enviarFoto} disabled={enviandoFoto} className="sr-only" /></label><p className="mt-2 text-xs text-onix/60">A imagem é compactada automaticamente antes do armazenamento.</p></section>
+      <section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Acesso</h2><p className="mt-3 text-sm text-onix/60">E-mail</p><p className="break-all text-sm">{email}</p><form onSubmit={trocarSenha} className="mt-5 space-y-4"><label className="block text-sm">Nova senha<input type="password" minLength={8} value={senha} onChange={(e) => setSenha(e.target.value)} className={fieldClass} /></label><label className="block text-sm">Confirmar nova senha<input type="password" minLength={8} value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className={fieldClass} /></label><button disabled={alterandoSenha || !senha || !confirmacao} className="inline-flex items-center gap-2 rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50"><LockKeyhole className="h-4 w-4" />{alterandoSenha ? "Atualizando…" : "Atualizar senha"}</button></form></section></aside>
+        </div>
+      </details>
     </div>}
   </div></main>
 }

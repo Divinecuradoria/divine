@@ -9,34 +9,13 @@ import SearchBar from "@/components/search-bar"
 import { Header } from "../components/Header"
 
 
-type Exposicao =
-  | {
-      tipo: "obra"
-      nome: string
-      categoria: string
-      imagem: string
-      span: string
-    }
-  | {
-      tipo: "categoria"
-      titulo: string
-      indice: string
-      variante: "onix" | "bronze" | "contorno"
-      span: string
-    }
-
-const paredeOriginal: Exposicao[] = [
-  { tipo: "categoria", titulo: "A Curadoria", indice: "I", variante: "onix", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo I", categoria: "Alta Gastronomia", imagem: "https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800&auto=format&fit=crop", span: "md:col-span-8" },
-  { tipo: "obra", nome: "Acervo II", categoria: "Design Floral", imagem: "/images/acervo-ii-floral.svg", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo III", categoria: "Alta Costura", imagem: "https://images.unsplash.com/photo-1596450514735-111a2fe02935?q=80&w=800&auto=format&fit=crop", span: "md:col-span-4" },
-  { tipo: "categoria", titulo: "O Padrão", indice: "II", variante: "bronze", span: "md:col-span-3" },
-  { tipo: "categoria", titulo: "Vanguarda", indice: "III", variante: "contorno", span: "md:col-span-3" },
-  { tipo: "obra", nome: "Acervo IV", categoria: "Cinematografia", imagem: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop", span: "md:col-span-5" },
-  { tipo: "obra", nome: "Acervo V", categoria: "Arquitetura", imagem: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop", span: "md:col-span-4" },
-  { tipo: "obra", nome: "Acervo VI", categoria: "Alta Confeitaria", imagem: "https://images.unsplash.com/photo-1535254973040-607b474cb50d?q=80&w=800&auto=format&fit=crop", span: "md:col-span-7" },
-  { tipo: "categoria", titulo: "A Excelência", indice: "IV", variante: "onix", span: "md:col-span-5" },
-]
+type Referencia = {
+  id: string
+  nome: string
+  categoria: string
+  imagem: string | null
+  slug: string
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -47,102 +26,59 @@ const fadeUp = {
   }),
 }
 
-function ObraCard({ nome, categoria, imagem, index }: { nome: string; categoria: string; imagem: string; index: number }) {
+function ReferenciaCard({ item }: { item: Referencia }) {
   return (
-    <Link href="/diretorio" className="group relative block h-72 overflow-hidden md:h-full">
-      <Image
-        src={imagem || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop"}
-        alt={`${nome} — ${categoria}`}
-        fill
-        sizes="(max-width: 768px) 100vw, 50vw"
-        className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
-      />
-      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-onix/70 to-transparent p-6 transition-colors duration-500 group-hover:bg-onix/60 md:p-8">
-        <div className="translate-y-0 opacity-100 transition-all duration-500 ease-out md:translate-y-3 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
-          <p className="text-[10px] font-light uppercase tracking-[0.4em] text-alabastro/70">
-            {categoria}
-          </p>
-          <h3 className="mt-2 font-serif text-3xl font-light leading-tight text-alabastro md:text-4xl">
-            {nome}
-          </h3>
-        </div>
+    <Link href={`/diretorio/${encodeURIComponent(item.slug)}`} className="group block overflow-hidden border border-linha bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden bg-onix">
+        {item.imagem ? <Image src={item.imagem} alt={item.nome} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center font-serif text-6xl text-alabastro" aria-hidden="true">D</div>}
       </div>
-      <span className="absolute right-5 top-5 text-[10px] font-light tabular-nums tracking-[0.3em] text-alabastro mix-blend-difference">
-        {String(index).padStart(2, "0")}
-      </span>
+      <div className="p-6">
+        <p className="text-xs leading-relaxed text-bronze">{item.categoria}</p>
+        <h3 className="mt-2 font-serif text-3xl text-onix">{item.nome}</h3>
+        <p className="mt-4 text-sm underline underline-offset-4">Conhecer o trabalho</p>
+      </div>
     </Link>
   )
 }
 
-function CategoriaCard({ titulo, indice, variante }: { titulo: string; indice: string; variante: "onix" | "bronze" | "contorno" }) {
-  const estilos = {
-    onix: "bg-onix text-alabastro",
-    bronze: "bg-bronze text-alabastro",
-    contorno: "bg-alabastro text-onix border border-linha",
-  }[variante]
-  const legenda = variante === "contorno" ? "text-onix/50" : "text-alabastro/60"
-
-  return (
-    <div className={`flex h-72 flex-col justify-between p-8 md:h-full md:p-10 ${estilos}`}>
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-light uppercase tracking-[0.4em] ${legenda}`}>
-          Chancela
-        </span>
-        <span className={`font-serif text-lg font-light italic ${legenda}`}>
-          {indice}
-        </span>
-      </div>
-      <h3 className="text-balance font-serif text-4xl font-light leading-[0.95] tracking-tight md:text-5xl lg:text-6xl">
-        {titulo}
-      </h3>
-    </div>
-  )
-}
-
 export default function Page() {
-  const [acervo, setAcervo] = useState<Exposicao[]>(paredeOriginal)
+  const [referencias, setReferencias] = useState<Referencia[]>([])
+  const [carregando, setCarregando] = useState(true)
+  const [erroAcervo, setErroAcervo] = useState(false)
 
   useEffect(() => {
+    let ativo = true
     async function fetchCuradoria() {
-      const supabase = getSupabase()
-      if (!supabase) return
-      try {
-        const { data, error } = await supabase
-          .from('suppliers')
-          .select('id, business_name, cover_image_url, slug, categories(name)')
-          .eq('is_active', true)
-          .eq('has_divine_seal', true)
-          .order('created_at', { ascending: false })
-          .limit(6)
-
-        if (data && data.length > 0) {
-          let indexFornecedor = 0
-          const novaGrade = paredeOriginal.map((item) => {
-            if (item.tipo === "obra" && indexFornecedor < data.length) {
-              const fornecedor = data[indexFornecedor]
-              indexFornecedor++
-              
-              const nomeCategoria = Array.isArray(fornecedor.categories) 
-                ? fornecedor.categories[0]?.name 
-                : (fornecedor.categories as any)?.name
-
-              return {
-                ...item,
-                nome: fornecedor.business_name,
-                categoria: nomeCategoria || "Curadoria DIVINE",
-                imagem: fornecedor.cover_image_url || item.imagem
-              }
-            }
-            return item
-          })
-          setAcervo(novaGrade)
-        }
-      } catch (err) {
-        // Silencia erro se a Vercel compilar com o link provisório
+      const db = getSupabase()
+      if (!db) throw new Error("Acervo indisponível")
+      const result = await db.from("suppliers")
+        .select("id,business_name,cover_image_url,slug")
+        .eq("is_active", true).eq("has_divine_seal", true)
+        .order("created_at", { ascending: false }).limit(6)
+      if (result.error) throw result.error
+      if (!result.data?.length) {
+        if (ativo) setReferencias([])
+        return
       }
+      const [links, categories] = await Promise.all([
+        db.from("supplier_categories").select("supplier_id,category_id").in("supplier_id", result.data.map(item => item.id)),
+        db.from("categories").select("id,name"),
+      ])
+      if (links.error || categories.error) throw new Error("Categorias indisponíveis")
+      const names = new Map((categories.data || []).map(item => [item.id, item.name]))
+      const mapped = result.data.filter(item => !!item.slug).map(item => ({
+        id: item.id,
+        nome: item.business_name,
+        slug: item.slug,
+        imagem: item.cover_image_url,
+        categoria: (links.data || []).filter(link => link.supplier_id === item.id)
+          .map(link => names.get(link.category_id)).filter(Boolean).join(" · ") || "Referência DIVINE",
+      }))
+      if (ativo) setReferencias(mapped)
     }
-    
-    fetchCuradoria()
+    fetchCuradoria().catch(() => { if (ativo) setErroAcervo(true) })
+      .finally(() => { if (ativo) setCarregando(false) })
+    return () => { ativo = false }
   }, [])
 
   return (
@@ -186,40 +122,63 @@ export default function Page() {
         <p className="text-xs uppercase tracking-widest text-bronze">Curadoria Nupcial · Centro-Oeste Mineiro</p>
         <h1 className="mt-3 font-serif text-4xl">O extraordinário começa na escolha.</h1>
       </div>
+      <section aria-label="Sua próxima escolha" className="px-5 pb-12">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-base leading-relaxed text-onix/80 md:text-lg">Profissionais selecionados para ajudar vocês a escolher com mais clareza no Centro-Oeste Mineiro.</p>
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/diretorio" className="rounded-lg bg-onix px-6 py-4 text-sm text-alabastro">Conhecer o Acervo</Link>
+            <Link href="/passaporte" className="rounded-lg border border-onix/30 px-6 py-4 text-sm">Criar meu Passaporte</Link>
+          </div>
+          <p className="mt-3 text-sm text-onix/65">O Passaporte é gratuito para casais: reúna suas referências e os dados do casamento.</p>
+        </div>
+      </section>
       <SearchBar />
 
-      <section id="acervo" className="scroll-mt-24 px-3 py-20 md:px-4 md:py-28">
-        <div className="mx-auto max-w-[1600px]">
-          <div className="mb-10 flex items-end justify-between border-t border-linha px-2 pt-6 md:mb-12">
-            <div>
-              <p className="text-[10px] font-light uppercase tracking-[0.4em] text-bronze">
-                Exposição Permanente
-              </p>
-              <h2 className="mt-3 font-serif text-4xl font-light tracking-tight text-onix md:text-5xl">
-                O Acervo
-              </h2>
-            </div>
+      <section id="acervo" className="scroll-mt-28 px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-[1200px]">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-5 border-t border-linha pt-6">
+            <div><p className="text-xs uppercase tracking-widest text-bronze">Profissionais selecionados</p><h2 className="mt-3 font-serif text-4xl md:text-5xl">Conheça o Acervo</h2></div>
+            <Link href="/diretorio" className="py-3 text-sm underline underline-offset-4">Ver todas as Referências</Link>
           </div>
+          {carregando ? <p role="status" className="py-8 text-onix/70">Carregando as Referências…</p> : erroAcervo ? (
+            <p role="status" className="border border-linha p-6 text-sm leading-relaxed">Não foi possível carregar a seleção agora. <Link href="/diretorio" className="underline underline-offset-4">Acessar o Acervo</Link></p>
+          ) : referencias.length ? (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{referencias.map(item => <ReferenciaCard key={item.id} item={item} />)}</div>
+          ) : <p className="border border-linha p-6 text-base leading-relaxed">A formação inaugural está em composição. As Referências serão apresentadas aqui conforme sua publicação.</p>}
+        </div>
+      </section>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
-            className="grid grid-cols-1 gap-2 md:auto-rows-[300px] md:grid-cols-12"
-          >
-            {acervo.map((item, i) =>
-              item.tipo === "obra" ? (
-                <div key={`${item.nome}-${i}`} className={item.span}>
-                  <ObraCard nome={item.nome} categoria={item.categoria} imagem={item.imagem} index={i + 1} />
-                </div>
-              ) : (
-                <div key={`${item.titulo}-${item.indice}`} className={item.span}>
-                  <CategoriaCard titulo={item.titulo} indice={item.indice} variante={item.variante} />
-                </div>
-              )
-            )}
-          </motion.div>
+      <section id="como-funciona" className="scroll-mt-28 border-y border-linha px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto grid max-w-[1200px] gap-10 lg:grid-cols-2 lg:items-center">
+          <div className="relative aspect-[4/3] overflow-hidden bg-onix/5">
+            <Image src="/images/acervo-ii-floral.svg" alt="Chancela DIVINE em bronze sobre renda" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-bronze">A Chancela DIVINE</p>
+            <h2 className="mt-3 font-serif text-4xl">Reconhecimento com critério.</h2>
+            <p className="mt-5 text-base leading-relaxed text-onix/80">Cada Referência passa por uma avaliação do trabalho, da reputação, da experiência do cliente, da identidade e do profissionalismo.</p>
+            <ol className="mt-7 space-y-5 text-base leading-relaxed">
+              <li><strong className="font-medium">01 · Conhecer.</strong> Portfólio, atuação e referências ajudam a compreender o trabalho.</li>
+              <li><strong className="font-medium">02 · Avaliar.</strong> A decisão é humana e editorial. Tempo de mercado, sozinho, não determina aprovação.</li>
+              <li><strong className="font-medium">03 · Acompanhar.</strong> O reconhecimento tem validade e está sujeito a reavaliação.</li>
+            </ol>
+            <p className="mt-7 border-t border-linha pt-5 text-sm leading-relaxed text-onix/75">A chancela não se compra. Serviços comerciais são opcionais e não alteram a decisão editorial.</p>
+            <Link href="/aplicar" className="mt-5 inline-block py-3 text-sm underline underline-offset-4">Sou fornecedor e quero apresentar meu trabalho</Link>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="inspiracao-titulo" className="px-5 py-16 md:px-10 md:py-24">
+        <div className="mx-auto max-w-[1200px]">
+          <p className="text-xs uppercase tracking-widest text-bronze">Repertório visual</p>
+          <h2 id="inspiracao-titulo" className="mt-3 font-serif text-4xl">Inspiração para começar.</h2>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-onix/75">Imagens ilustrativas para despertar ideias. Os profissionais selecionados estão identificados no Acervo.</p>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {[{ src: "/images/acervo-gastronomia.webp", title: "Receber com cuidado" }, { src: "/images/acervo-floral.webp", title: "Compor o ambiente" }, { src: "/images/acervo-confeitaria.webp", title: "Celebrar os detalhes" }].map(item => (
+              <figure key={item.src}><div className="relative aspect-[4/3]"><Image src={item.src} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" /></div><figcaption className="mt-3 font-serif text-2xl">{item.title}</figcaption></figure>
+            ))}
+          </div>
+          <Link href="/revista" className="mt-6 inline-block py-3 text-sm underline underline-offset-4">Encontrar orientação em O Editorial</Link>
         </div>
       </section>
 
@@ -244,7 +203,7 @@ export default function Page() {
                 Em vez de infinitos catálogos que geram dúvida e exaustão aos noivos, escolhemos o caminho da clareza. Mapeamos o Centro-Oeste mineiro com um único objetivo: reunir os artesãos da memória.
               </p>
               <p className="mb-6">
-                Para os noivos, entregamos a paz de uma escolha segura e refinada. Para os talentos, o espaço que a excelência deles merece.
+                Para os noivos, reunimos referências para escolhas mais informadas e tranquilas. Para os talentos, o espaço que a excelência deles merece.
               </p>
             </div>
           </motion.div>

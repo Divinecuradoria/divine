@@ -7,7 +7,7 @@ import { Header } from "@/components/Header"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { fieldClass } from "@/lib/curadoria"
 import { compactarImagem } from "@/lib/image-compression"
-import { SERVICE_OPTIONS, INVESTMENT_OPTIONS, uniqueServices } from "@/lib/supplier-profile"
+import { servicesForCategory, INVESTMENT_OPTIONS, uniqueServices } from "@/lib/supplier-profile"
 
 type City = { id: string; name: string; state: string }
 type Category = { id: string; name: string; slug: string }
@@ -78,7 +78,7 @@ export default function PainelFornecedor() {
     [categories, selectedCategories]
   )
 
-  const serviceOptions = useMemo(() => uniqueServices(selectedNames.flatMap(name => SERVICE_OPTIONS[name] || [])), [selectedNames])
+  const serviceOptions = useMemo(() => uniqueServices(selectedNames.flatMap(name => servicesForCategory(name))), [selectedNames])
   const allServices = uniqueServices([...selectedServices, ...form.services.split("\n")])
   const missing = [
     !form.businessName.trim() && { label: "Nome público", target: "public-name" },
@@ -171,7 +171,7 @@ export default function PainelFornecedor() {
       setOtherAreas(item.other_service_areas || "")
       setInvestmentLevels(item.investment_levels || [])
       const linkedNames = (categoriesResult.data || []).filter(category => (links.data || []).some(link => link.category_id === category.id)).map(category => category.name)
-      const knownServices = uniqueServices(linkedNames.flatMap(name => SERVICE_OPTIONS[name] || []))
+      const knownServices = uniqueServices(linkedNames.flatMap(name => servicesForCategory(name)))
       setSelectedServices((item.services || []).filter(service => knownServices.includes(service)))
       setSelectedCategories((links.data || []).map((link) => link.category_id))
       setForm({
@@ -420,7 +420,7 @@ export default function PainelFornecedor() {
 
   function toggleCategory(id: string) {
     const next = selectedCategories.includes(id) ? selectedCategories.filter(item => item !== id) : [...selectedCategories, id]
-    const nextOptions = uniqueServices(categories.filter(category => next.includes(category.id)).flatMap(category => SERVICE_OPTIONS[category.name] || []))
+    const nextOptions = uniqueServices(categories.filter(category => next.includes(category.id)).flatMap(category => servicesForCategory(category.name)))
     // Ao remover uma categoria, conservar serviços como texto editável evita perda silenciosa.
     const retainedAsOther = selectedServices.filter(service => !nextOptions.includes(service))
     if (retainedAsOther.length) updateField("services", uniqueServices([...form.services.split("\n"), ...retainedAsOther]).join("\n"))
@@ -470,7 +470,7 @@ export default function PainelFornecedor() {
                   <p className="mt-2 text-sm text-onix/70">Marque apenas o que você oferece. A composição da proposta será combinada com o casal.</p>
                   {!selectedCategories.length && <p className="mt-3 text-sm">Selecione uma categoria acima para ver os serviços.</p>}
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceOptions.map(service => <label key={service} className="flex items-start gap-2 rounded border border-linha bg-white p-3 text-sm"><input type="checkbox" checked={selectedServices.includes(service)} onChange={() => setSelectedServices(current => current.includes(service) ? current.filter(item => item !== service) : [...current, service])} className="mt-0.5" />{service}</label>)}</div>
-                  <label className="mt-4 block text-sm">Outros serviços ou serviços já cadastrados<textarea maxLength={4800} rows={3} value={form.services} onChange={event => updateField("services", event.target.value)} className={fieldClass} /><span className="mt-2 block text-xs text-onix/60">Um por linha. Seus serviços anteriores foram preservados.</span></label>
+                  <label className="mt-4 block text-sm">Outros serviços personalizados<textarea maxLength={4800} rows={3} value={form.services} onChange={event => updateField("services", event.target.value)} className={fieldClass} /><span className="mt-2 block text-xs text-onix/60">Um por linha. Seus serviços anteriores foram preservados.</span></label>
                 </fieldset>
                 <section id="service-territory" className="scroll-mt-32 space-y-4 border-t border-linha pt-5">
                   <h2 className="font-serif text-2xl">Onde você atende</h2>
@@ -542,4 +542,5 @@ export default function PainelFornecedor() {
     </main>
   )
 }
+
 

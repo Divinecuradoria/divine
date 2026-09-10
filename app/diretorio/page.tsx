@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { Header } from "@/components/Header"
-import { useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   CalendarCheck,
@@ -31,7 +31,6 @@ type Fornecedor = {
   whatsapp: string | null
   price_min: number | null
   price_max: number | null
-  style: string | null
   agenda_aberta: boolean
   has_divine_seal: boolean
   city_id: string | null
@@ -43,7 +42,6 @@ type Filtros = {
   categoria: string
   cidade: string
   faixa: string
-  estilo: string
   soComAgenda: boolean
 }
 
@@ -61,14 +59,6 @@ const FAIXAS: { id: string; label: string; teste: (f: Fornecedor) => boolean }[]
     teste: (f) => (f.price_min ?? 0) <= 30000 && (f.price_max ?? Infinity) >= 15000,
   },
   { id: "30-mais", label: "Acima de R$ 30 mil", teste: (f) => (f.price_max ?? 0) >= 30000 },
-]
-
-// Filtros comportamentais — não apenas técnicos
-const ESTILOS = [
-  { id: "pe-na-grama", label: "Pé na Grama", desc: "Dia, ar livre e chácaras" },
-  { id: "tradicional", label: "Tradicional", desc: "O clássico, impecável" },
-  { id: "editorial", label: "Editorial", desc: "Vanguarda e autoral" },
-  { id: "atemporal", label: "Atemporal", desc: "Sobrio, sem data de validade" },
 ]
 
 const fadeUp = {
@@ -155,9 +145,28 @@ function CartaoFornecedor({
   aoFavoritar: (id: string) => void
   aoChamar: (id: string) => void
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const contato = linkZap(fornecedor)
   const categorias = normalizaCategorias(fornecedor.categories)
   const local = fornecedor.city ? `${fornecedor.city.name}, ${fornecedor.city.state}` : "Minas Gerais"
+  const query = searchParams.toString()
+  const origem = `${pathname}${query ? `?${query}` : ""}`
+
+  function abrirDetalhes(event: React.MouseEvent<HTMLElement>) {
+    const alvo = event.target as HTMLElement
+    if (alvo.closest("button, a")) return
+    sessionStorage.setItem("divine-acervo-scroll", String(window.scrollY))
+    router.push(`/diretorio/${fornecedor.slug}?from=${encodeURIComponent(origem)}`)
+  }
+
+  function abrirComTeclado(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    sessionStorage.setItem("divine-acervo-scroll", String(window.scrollY))
+    router.push(`/diretorio/${fornecedor.slug}?from=${encodeURIComponent(origem)}`)
+  }
 
   return (
     <motion.article
@@ -165,6 +174,11 @@ function CartaoFornecedor({
       animate="visible"
       custom={indice}
       variants={fadeUp}
+      role="link"
+      tabIndex={0}
+      onClick={abrirDetalhes}
+      onKeyDown={abrirComTeclado}
+      aria-label={`Ver detalhes de ${fornecedor.business_name}`}
       className="group relative overflow-hidden rounded-2xl border border-linha bg-white shadow-[0_10px_40px_-24px_rgba(18,18,18,0.2)]"
     >
       {/* A imagem ocupa ~80% do card (Camada 2) */}
@@ -263,7 +277,6 @@ function Diretorio() {
     categoria: params.get("categoria") || "",
     cidade: params.get("cidade") || "",
     faixa: "",
-    estilo: "",
     soComAgenda: false,
   })
 
@@ -275,7 +288,7 @@ function Diretorio() {
         supabase
           .from("suppliers")
           .select(
-            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city_id"
+            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, agenda_aberta, has_divine_seal, city_id"
           )
           .eq("is_active", true)
           .eq("has_divine_seal", true),
@@ -326,6 +339,15 @@ function Diretorio() {
     carregar().catch(() => { setErro(true); setCarregando(false) })
   }, [])
 
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("divine-acervo-scroll")
+    if (!savedScroll) return
+    const scrollY = Number(savedScroll)
+    sessionStorage.removeItem("divine-acervo-scroll")
+    if (!Number.isFinite(scrollY)) return
+    requestAnimationFrame(() => window.scrollTo(0, scrollY))
+  }, [carregando])
+
   // Carrega os favoritos existentes da noiva (se logada)
   useEffect(() => {
     const supabase = getSupabase()
@@ -370,7 +392,6 @@ function Diretorio() {
           if (!slugs.includes(filtros.categoria)) return false
         }
         if (filtros.cidade && f.city?.slug !== filtros.cidade) return false
-        if (filtros.estilo && f.style !== filtros.estilo) return false
         if (filtros.soComAgenda && !f.agenda_aberta) return false
         return faixaSel.teste(f)
       })
@@ -417,7 +438,7 @@ function Diretorio() {
   }, [lista, passaporte])
 
   function limparFiltros() {
-    setFiltros({ categoria: "", cidade: "", faixa: "", estilo: "", soComAgenda: false })
+    setFiltros({ categoria: "", cidade: "", faixa: "", soComAgenda: false })
   }
 
   async function alternarFavorito(id: string) {
@@ -549,26 +570,6 @@ function Diretorio() {
                         }`}
                       />
                       {fx.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-onix/40">Estilo</p>
-                <div className="space-y-1.5">
-                  {ESTILOS.map((e) => (
-                    <button
-                      key={e.id}
-                      onClick={() =>
-                        setFiltros({ ...filtros, estilo: filtros.estilo === e.id ? "" : e.id })
-                      }
-                      className={`w-full rounded-xl border p-3 text-left transition ${
-                        filtros.estilo === e.id ? "border-bronze bg-bronze/5" : "border-linha hover:border-onix/30"
-                      }`}
-                    >
-                      <span className="block text-sm font-medium">{e.label}</span>
-                      <span className="block text-[11px] text-onix/50">{e.desc}</span>
                     </button>
                   ))}
                 </div>

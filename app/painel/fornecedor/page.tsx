@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/Header"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { fieldClass } from "@/lib/curadoria"
+import { compactarImagem } from "@/lib/image-compression"
 
 type Category = { id: string; name: string; slug: string }
 type Supplier = {
@@ -14,7 +15,6 @@ type Supplier = {
   bio: string | null
   cover_image_url: string | null
   whatsapp: string | null
-  style: string | null
   portfolio: unknown
   services: string[] | null
   instagram_url: string | null
@@ -23,14 +23,6 @@ type Supplier = {
   website_url: string | null
   has_divine_seal: boolean
 }
-
-const STYLES = [
-  ["", "Não informar"],
-  ["pe-na-grama", "Pé na Grama"],
-  ["tradicional", "Tradicional"],
-  ["editorial", "Editorial"],
-  ["atemporal", "Atemporal"],
-] as const
 
 function portfolioUrl(value: unknown): string {
   if (!Array.isArray(value) || !value.length) return ""
@@ -46,7 +38,7 @@ export default function PainelFornecedor() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [form, setForm] = useState({
-    businessName: "", bio: "", whatsapp: "", portfolioUrl: "", style: "",
+    businessName: "", bio: "", whatsapp: "", portfolioUrl: "",
     services: "", instagram: "", facebook: "", tiktok: "", website: "",
   })
   const [password, setPassword] = useState("")
@@ -76,7 +68,7 @@ export default function PainelFornecedor() {
       const currentUser = auth.data.user
       const [supplierResult, categoriesResult] = await Promise.all([
         db.from("suppliers")
-          .select("id,business_name,bio,cover_image_url,whatsapp,style,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,has_divine_seal")
+        .select("id,business_name,bio,cover_image_url,whatsapp,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,has_divine_seal")
           .eq("owner_user_id", currentUser.id)
           .eq("is_active", true)
           .limit(1)
@@ -103,7 +95,6 @@ export default function PainelFornecedor() {
         bio: item.bio || "",
         whatsapp: item.whatsapp || "",
         portfolioUrl: portfolioUrl(item.portfolio),
-        style: item.style || "",
         services: (item.services || []).join("\n"),
         instagram: item.instagram_url || "",
         facebook: item.facebook_url || "",
@@ -139,7 +130,6 @@ export default function PainelFornecedor() {
         business_name: form.businessName.trim(),
         bio: form.bio.trim() || null,
         whatsapp: form.whatsapp.trim() || null,
-        style: form.style || null,
         services,
         instagram_url: form.instagram.trim() || null,
         facebook_url: form.facebook.trim() || null,
@@ -159,7 +149,7 @@ export default function PainelFornecedor() {
       setSupplier((current) => current ? {
         ...current,
         business_name: form.businessName.trim(), bio: form.bio.trim() || null,
-        whatsapp: form.whatsapp.trim() || null, style: form.style || null,
+        whatsapp: form.whatsapp.trim() || null,
         services, instagram_url: form.instagram.trim() || null,
         facebook_url: form.facebook.trim() || null, tiktok_url: form.tiktok.trim() || null,
         website_url: form.website.trim() || null, portfolio: url ? [{ url }] : existingPortfolio,
@@ -179,9 +169,10 @@ export default function PainelFornecedor() {
     try {
       const db = getSupabase()
       if (!db) throw new Error(ACCESS_UNAVAILABLE)
-      const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg"
+      const optimized = await compactarImagem(file, { maxDimension: 1800, quality: 0.84 })
+      const extension = "webp"
       const path = `${userId}/${crypto.randomUUID()}.${extension}`
-      const upload = await db.storage.from("supplier-covers").upload(path, file, { contentType: file.type, cacheControl: "3600", upsert: false })
+      const upload = await db.storage.from("supplier-covers").upload(path, optimized, { contentType: optimized.type, cacheControl: "3600", upsert: false })
       if (upload.error) throw upload.error
       const publicUrl = db.storage.from("supplier-covers").getPublicUrl(path).data.publicUrl
       const result = await db.from("suppliers").update({ cover_image_url: publicUrl }).eq("id", supplier.id).eq("owner_user_id", userId)
@@ -236,7 +227,6 @@ export default function PainelFornecedor() {
                 <label className="block text-sm">Nome público<input required maxLength={160} value={form.businessName} onChange={(event) => updateField("businessName", event.target.value)} className={fieldClass} /></label>
                 <label className="block text-sm">Texto de apresentação<textarea required maxLength={1200} rows={5} value={form.bio} onChange={(event) => updateField("bio", event.target.value)} className={fieldClass} /></label>
                 <label className="block text-sm">Link principal do portfólio<input type="url" placeholder="https://" value={form.portfolioUrl} onChange={(event) => updateField("portfolioUrl", event.target.value)} className={fieldClass} /></label>
-                <label className="block text-sm">Estilo<select value={form.style} onChange={(event) => updateField("style", event.target.value)} className={fieldClass}>{STYLES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
                 <label className="block text-sm">Principais serviços <span className="text-onix/50">(um por linha)</span><textarea maxLength={1200} rows={5} value={form.services} onChange={(event) => updateField("services", event.target.value)} className={fieldClass} /></label>
                 <fieldset>
                   <legend className="text-sm">Categorias de atuação <span className="text-onix/50">(selecione uma ou mais)</span></legend>

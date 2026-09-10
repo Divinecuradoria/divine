@@ -250,59 +250,125 @@ export default function PainelFornecedor() {
     setMessage("")
     setError("")
     try {
+      const expiry = new Date(validUntil)
+      if (!supplier.has_divine_seal || !Number.isFinite(expiry.getTime()) || expiry.getTime() <= Date.now()) {
+        throw new Error("A Chancela precisa estar vigente para gerar a arte.")
+      }
       const image = new window.Image()
-      image.src = "/divine-seal2.svg"
       await new Promise<void>((resolve, reject) => {
         image.onload = () => resolve()
         image.onerror = () => reject(new Error("Não foi possível carregar a Chancela DIVINE."))
+        image.src = "/divine-seal2.svg"
       })
 
       const canvas = document.createElement("canvas")
-      canvas.width = 1600
-      canvas.height = 1000
+      canvas.width = 1200
+      canvas.height = 1800
       const context = canvas.getContext("2d")
       if (!context) throw new Error("Seu navegador não permite gerar a arte.")
-
-      context.fillStyle = "#f7f4ef"
-      context.fillRect(0, 0, canvas.width, canvas.height)
-      context.strokeStyle = "#b07b43"
-      context.lineWidth = 3
-      context.strokeRect(34, 34, canvas.width - 68, canvas.height - 68)
+      const center = canvas.width / 2
+      context.fillStyle = "#171715"
+      context.fillRect(0, 0, 1200, 1800)
+      context.strokeStyle = "#aa8050"
+      context.lineWidth = 2
+      context.strokeRect(46, 46, 1108, 1708)
+      context.strokeStyle = "#443b2d"
+      context.lineWidth = 1
+      context.strokeRect(59, 59, 1082, 1682)
       context.textAlign = "center"
-      context.fillStyle = "#171717"
-      context.font = "600 42px Georgia, serif"
-      context.fillText("CHANCELA DIVINE", canvas.width / 2, 128)
-      context.drawImage(image, 590, 190, 420, 420)
+      context.fillStyle = "#f3ecdf"
+      context.font = "46px Georgia, serif"
+      context.fillText("D I V I N E", center, 174)
+      context.fillStyle = "#baa27d"
+      context.font = "18px Arial, sans-serif"
+      context.fillText("C U R A D O R I A   N U P C I A L", center, 220)
+      context.drawImage(image, 400, 302, 400, 400)
+      context.fillStyle = "#c9a677"
+      context.font = "22px Arial, sans-serif"
+      context.fillText("R E F E R Ê N C I A   D I V I N E", center, 777)
 
+      // Fit the complete saved name, including long names, without truncation.
       const nome = supplier.business_name.trim() || "Referência DIVINE"
-      const palavras = nome.split(/\s+/)
-      const linhas: string[] = []
-      let linha = ""
-      context.font = "600 54px Georgia, serif"
-      for (const palavra of palavras) {
-        const tentativa = linha ? linha + " " + palavra : palavra
-        if (context.measureText(tentativa).width > 1160 && linha) {
-          linhas.push(linha)
-          linha = palavra
-        } else {
-          linha = tentativa
+      const wrapName = (size: number): string[] => {
+        context.font = size + "px Georgia, serif"
+        const lines: string[] = []
+        let line = ""
+        for (const character of Array.from(nome)) {
+          if (context.measureText(line + character).width > 940 && line) {
+            const space = line.lastIndexOf(" ")
+            if (space > 0) {
+              lines.push(line.slice(0, space))
+              line = line.slice(space + 1) + character
+            } else {
+              lines.push(line)
+              line = character
+            }
+          } else line += character
         }
+        if (line) lines.push(line.trim())
+        return lines
       }
-      if (linha) linhas.push(linha)
-      linhas.slice(0, 2).forEach((texto, index) => context.fillText(texto, canvas.width / 2, 690 + index * 64))
+      let size = 66
+      let lines = wrapName(size)
+      while (lines.length > 3 && size > 20) {
+        size -= 2
+        lines = wrapName(size)
+      }
+      context.fillStyle = "#f3ecdf"
+      const lineHeight = size * 1.18
+      const firstLine = 906 - ((lines.length - 1) * lineHeight) / 2
+      lines.forEach((line, index) => context.fillText(line, center, firstLine + index * lineHeight))
 
-      const validade = new Intl.DateTimeFormat("pt-BR", { year: "numeric" }).format(new Date(validUntil))
-      context.fillStyle = "#8f6036"
-      context.font = "500 30px Arial, sans-serif"
-      context.fillText(`Válida até ${validade}`, canvas.width / 2, 840)
-      context.fillStyle = "#5c5148"
-      context.font = "24px Arial, sans-serif"
-      context.fillText("Curadoria Nupcial · Centro-Oeste Mineiro", canvas.width / 2, 900)
+      context.strokeStyle = "#aa8050"
+      context.beginPath()
+      context.moveTo(505, 1060)
+      context.lineTo(695, 1060)
+      context.stroke()
+      context.fillStyle = "#d2c8b7"
+      context.font = "25px Georgia, serif"
+      context.fillText("Um reconhecimento à excelência.", center, 1122)
+      context.font = "20px Arial, sans-serif"
+      context.fillText("Selecionado para integrar o Acervo DIVINE.", center, 1166)
+      const validade = new Intl.DateTimeFormat("pt-BR", { year: "numeric", timeZone: "America/Sao_Paulo" }).format(expiry)
+      context.fillStyle = "#c9a677"
+      context.font = "38px Georgia, serif"
+      context.fillText("Chancela · " + validade, center, 1250)
+      context.font = "18px Arial, sans-serif"
+      context.fillText("Válida até " + new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(expiry), center, 1288)
 
+      // Fixed site QR: error correction M and four-module white quiet zone.
+      // Destination: https://www.divinecuradoria.com.br/
+      const qrRows = ["0000000000000000000000000000000000000","0000000000000000000000000000000000000","0000000000000000000000000000000000000","0000000000000000000000000000000000000","0000111111101010011010100011111110000","0000100000100111011100010010000010000","0000101110100100001001000010111010000","0000101110101110100010100010111010000","0000101110101010100001100010111010000","0000100000101011000011011010000010000","0000111111101010101010101011111110000","0000000000001010010001110000000000000","0000100010111111010101010111110010000","0000100110011001011100000011111110000","0000100010111001000110001011100010000","0000000000000110001011001110110110000","0000111100110011011011010100000100000","0000111000000100000111100010111110000","0000101001110010111111001100111010000","0000110011001001010011110010000110000","0000001110110110010001011101000100000","0000100100001110011110100111110110000","0000001110110100100111001010101010000","0000000101001001101001101100000110000","0000110011101101011101111111110010000","0000000000001010000101111000100010000","0000111111101110011100111010111010000","0000100000100010110101011000100000000","0000101110101101110101011111110000000","0000101110100010011110110101000010000","0000101110100010101100011100011110000","0000100000100010010001101100110110000","0000111111101111100101001101100100000","0000000000000000000000000000000000000","0000000000000000000000000000000000000","0000000000000000000000000000000000000","0000000000000000000000000000000000000"]
+      const moduleSize = 6
+      const qrSize = qrRows.length * moduleSize
+      const qrX = (canvas.width - qrSize) / 2
+      const qrY = 1360
+      context.fillStyle = "#ffffff"
+      context.fillRect(qrX, qrY, qrSize, qrSize)
+      context.fillStyle = "#111111"
+      qrRows.forEach((row, y) => {
+        Array.from(row).forEach((cell, x) => {
+          if (cell === "1") context.fillRect(qrX + x * moduleSize, qrY + y * moduleSize, moduleSize, moduleSize)
+        })
+      })
+      context.fillStyle = "#d2c8b7"
+      context.font = "18px Arial, sans-serif"
+      context.fillText("divinecuradoria.com.br", center, 1624)
+      context.fillStyle = "#baa27d"
+      context.font = "16px Arial, sans-serif"
+      context.fillText("CENTRO-OESTE MINEIRO", center, 1692)
+
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+        (result) => result ? resolve(result) : reject(new Error("Não foi possível preparar o arquivo.")), "image/png"
+      ))
+      const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
-      link.download = `chancela-divine-${nome.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}.png`
-      link.href = canvas.toDataURL("image/png")
+      link.download = `chancela-divine-${nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${validade}.png`
+      link.href = url
+      document.body.appendChild(link)
       link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000)
       setMessage("Arte personalizada da Chancela baixada.")
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível gerar a arte da Chancela.")
@@ -370,7 +436,7 @@ export default function PainelFornecedor() {
                 <button type="button" onClick={downloadSeal} disabled={downloadingSeal || !validUntil} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm transition hover:border-bronze hover:text-bronze disabled:opacity-50">
                   {downloadingSeal ? "Preparando arte…" : validUntil ? "Baixar arte personalizada" : "Arte aguardando validade"}
                 </button>
-                <p className="mt-3 text-xs leading-relaxed text-onix/60">A arte inclui o nome público da sua empresa e o ano de validade da Chancela. Use-a apenas enquanto a referência estiver vigente.</p>
+                <p className="mt-3 text-xs leading-relaxed text-onix/60">Arte vertical em PNG com o nome público da sua empresa, validade da Chancela e QR code para o site DIVINE. Use-a apenas enquanto a referência estiver vigente.</p>
               </section>}
 
               <section className="border-t border-linha pt-6">

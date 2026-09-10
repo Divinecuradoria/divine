@@ -34,6 +34,7 @@ function PainelPassaporte() {
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [perfil, setPerfil] = useState<PerfilCasal | null>(null)
+  const [fotoUrl, setFotoUrl] = useState("")
   const [form, setForm] = useState({ nome: "", whatsapp: "", data: "", local: "", convidados: "", notas: "" })
   const [favoritos, setFavoritos] = useState<ReferenciaFavorita[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -71,6 +72,15 @@ function PainelPassaporte() {
         photo_url: null,
         created_at: new Date().toISOString(),
       }
+      let fotoAssinada = ""
+      if (base.photo_url) {
+        if (/^https?:\/\//i.test(base.photo_url)) {
+          fotoAssinada = base.photo_url
+        } else {
+          const signed = await db.storage.from("couple-photos").createSignedUrl(base.photo_url, 3600)
+          fotoAssinada = signed.data?.signedUrl || ""
+        }
+      }
       const ids = (favResult.data || []).map((item) => item.supplier_id)
       let referencias: ReferenciaFavorita[] = []
       if (ids.length) {
@@ -95,7 +105,7 @@ function PainelPassaporte() {
         })) as ReferenciaFavorita[]
       }
       if (!ativo) return
-      setUserId(user.id); setEmail(user.email || ""); setPerfil(base)
+      setUserId(user.id); setEmail(user.email || ""); setPerfil(base); setFotoUrl(fotoAssinada)
       setForm({ nome: base.full_name || "", whatsapp: base.whatsapp || "", data: base.wedding_date || "", local: base.location || "", convidados: base.guests ? String(base.guests) : "", notas: base.notes || "" })
       setFavoritos(referencias); setCarregando(false)
     }
@@ -139,10 +149,11 @@ function PainelPassaporte() {
       const path = `${userId}/${crypto.randomUUID()}.webp`
       const upload = await db.storage.from("couple-photos").upload(path, optimized, { contentType: optimized.type, cacheControl: "3600", upsert: false })
       if (upload.error) throw upload.error
-      const url = db.storage.from("couple-photos").getPublicUrl(path).data.publicUrl
-      const result = await db.from("profiles").update({ photo_url: url }).eq("id", userId)
+      const signed = await db.storage.from("couple-photos").createSignedUrl(path, 3600)
+      const url = signed.data?.signedUrl || ""
+      const result = await db.from("profiles").update({ photo_url: path }).eq("id", userId)
       if (result.error) throw result.error
-      setPerfil((current) => current ? { ...current, photo_url: url } : current); setMensagem("Foto do casal atualizada.")
+      setPerfil((current) => current ? { ...current, photo_url: path } : current); setFotoUrl(url); setMensagem("Foto do casal atualizada.")
     } catch { setErro("Não foi possível enviar a foto. Tente novamente.") }
     finally { setEnviandoFoto(false); event.target.value = "" }
   }
@@ -169,7 +180,7 @@ function PainelPassaporte() {
       </form>
       <section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Referências salvas</h2><p className="mt-2 text-sm text-onix/60">Seus fornecedores favoritos organizados por categoria.</p>{!favoritos.length ? <p className="mt-6 text-sm text-onix/60">Você ainda não salvou nenhuma Referência. <Link className="underline" href="/diretorio">Explorar o Acervo</Link></p> : <div className="mt-6 space-y-8">{grupos.map((grupo) => <section key={grupo.nome}><h3 className="mb-3 font-serif text-xl">{grupo.nome}</h3><div className="grid gap-4 sm:grid-cols-2">{grupo.itens.map((item) => <Link key={item.id} href={`/diretorio/${item.slug}`} className="overflow-hidden rounded-xl border border-linha bg-white"><div className="aspect-[4/3] bg-onix">{item.cover_image_url && <img src={item.cover_image_url} alt="" className="h-full w-full object-cover" />}</div><div className="p-3"><p className="font-serif text-lg">{item.business_name}</p>{item.city && <p className="mt-1 flex items-center gap-1 text-xs text-onix/60"><MapPin className="h-3 w-3" />{item.city.name}, {item.city.state}</p>}</div></Link>)}</div></section>)}</div>}</section>
       </div>
-      <aside className="space-y-8"><section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Foto do casal</h2>{perfil?.photo_url ? <img src={perfil.photo_url} alt="Foto do casal" className="mt-4 aspect-[4/3] w-full rounded-xl object-cover" /> : <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-linha text-onix/40"><ImagePlus className="h-8 w-8" /></div>}<label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm">{enviandoFoto ? "Compactando e enviando…" : "Enviar foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={enviarFoto} disabled={enviandoFoto} className="sr-only" /></label><p className="mt-2 text-xs text-onix/60">A imagem é compactada automaticamente antes do armazenamento.</p></section>
+      <aside className="space-y-8"><section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Foto do casal</h2>{fotoUrl ? <img src={fotoUrl} alt="Foto do casal" className="mt-4 aspect-[4/3] w-full rounded-xl object-cover" /> : <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-linha text-onix/40"><ImagePlus className="h-8 w-8" /></div>}<label className="mt-4 block cursor-pointer rounded-lg border border-onix px-4 py-3 text-center text-sm">{enviandoFoto ? "Compactando e enviando…" : "Enviar foto"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={enviarFoto} disabled={enviandoFoto} className="sr-only" /></label><p className="mt-2 text-xs text-onix/60">A imagem é compactada automaticamente antes do armazenamento.</p></section>
       <section className="border-t border-linha pt-6"><h2 className="font-serif text-2xl">Acesso</h2><p className="mt-3 text-sm text-onix/60">E-mail</p><p className="break-all text-sm">{email}</p><form onSubmit={trocarSenha} className="mt-5 space-y-4"><label className="block text-sm">Nova senha<input type="password" minLength={8} value={senha} onChange={(e) => setSenha(e.target.value)} className={fieldClass} /></label><label className="block text-sm">Confirmar nova senha<input type="password" minLength={8} value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className={fieldClass} /></label><button disabled={alterandoSenha || !senha || !confirmacao} className="inline-flex items-center gap-2 rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50"><LockKeyhole className="h-4 w-4" />{alterandoSenha ? "Atualizando…" : "Atualizar senha"}</button></form></section><Link href="/diretorio" className="inline-flex items-center gap-2 rounded-lg bg-bronze px-5 py-3 text-sm text-alabastro"><CalendarDays className="h-4 w-4" />Explorar o Acervo</Link></aside>
     </div>}
   </div></main>

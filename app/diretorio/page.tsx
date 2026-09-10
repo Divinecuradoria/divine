@@ -21,6 +21,8 @@ type CategoriaRef = { id?: string; name: string; slug: string }
 
 type VinculoCategoria = { supplier_id: string; category_id: string }
 
+type CidadeRef = { id: string; name: string; state: string; slug: string }
+
 type Fornecedor = {
   id: string
   slug: string
@@ -32,6 +34,7 @@ type Fornecedor = {
   style: string | null
   agenda_aberta: boolean
   has_divine_seal: boolean
+  city_id: string | null
   city: { name: string; state: string; slug: string } | null
   categories: CategoriaRef[] | CategoriaRef | null
 }
@@ -248,7 +251,7 @@ function Diretorio() {
   const router = useRouter()
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [categorias, setCategorias] = useState<CategoriaRef[]>([])
-  const [cidades, setCidades] = useState<{ name: string; state: string; slug: string }[]>([])
+  const [cidades, setCidades] = useState<CidadeRef[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(false)
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
@@ -272,13 +275,13 @@ function Diretorio() {
         supabase
           .from("suppliers")
           .select(
-            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city(name, state, slug)"
+            "id, slug, business_name, cover_image_url, whatsapp, price_min, price_max, style, agenda_aberta, has_divine_seal, city_id"
           )
           .eq("is_active", true)
           .eq("has_divine_seal", true),
         supabase.from("supplier_categories").select("supplier_id, category_id"),
         supabase.from("categories").select("id, name, slug").order("name"),
-        supabase.from("cities").select("name, state, slug").order("name"),
+        supabase.from("cities").select("id, name, state, slug").order("name"),
       ])
       if (resFornecedores.error) {
         console.error("Falha ao carregar fornecedores do Acervo", resFornecedores.error)
@@ -304,15 +307,20 @@ function Diretorio() {
           categoriasPorFornecedor.set(vinculo.supplier_id, atuais)
         }
 
+        const cidadesPorId = new Map(
+          (resCidades.data || []).map((cidade) => [cidade.id, cidade])
+        )
+
         setFornecedores(
           resFornecedores.data.map((fornecedor) => ({
             ...(fornecedor as unknown as Fornecedor),
+            city: cidadesPorId.get(fornecedor.city_id) || null,
             categories: categoriasPorFornecedor.get(fornecedor.id) || [],
           }))
         )
       }
       if (resCategorias.data) setCategorias(resCategorias.data as CategoriaRef[])
-      if (resCidades.data) setCidades(resCidades.data as { name: string; state: string; slug: string }[])
+      if (resCidades.data) setCidades(resCidades.data as CidadeRef[])
       setCarregando(false)
     }
     carregar().catch(() => { setErro(true); setCarregando(false) })

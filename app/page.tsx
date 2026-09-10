@@ -28,7 +28,7 @@ type Exposicao =
 const paredeOriginal: Exposicao[] = [
   { tipo: "categoria", titulo: "A Curadoria", indice: "I", variante: "onix", span: "md:col-span-4" },
   { tipo: "obra", nome: "Acervo I", categoria: "Alta Gastronomia", imagem: "https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800&auto=format&fit=crop", span: "md:col-span-8" },
-  { tipo: "obra", nome: "Acervo II", categoria: "Design Floral", imagem: "https://images.unsplash.com/photo-1522332616212-70b7d3410657?q=80&w=800&auto=format&fit=crop", span: "md:col-span-5" },
+  { tipo: "obra", nome: "Acervo II", categoria: "Design Floral", imagem: "/images/acervo-ii-floral.svg", span: "md:col-span-5" },
   { tipo: "obra", nome: "Acervo III", categoria: "Alta Costura", imagem: "https://images.unsplash.com/photo-1596450514735-111a2fe02935?q=80&w=800&auto=format&fit=crop", span: "md:col-span-4" },
   { tipo: "categoria", titulo: "O Padrão", indice: "II", variante: "bronze", span: "md:col-span-3" },
   { tipo: "categoria", titulo: "Vanguarda", indice: "III", variante: "contorno", span: "md:col-span-3" },

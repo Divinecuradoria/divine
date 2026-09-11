@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 const sections: InstitutionalSection[] = [
   { id: "contato", title: "Sobre esta política", content: <>
-    <p>Esta política explica o tratamento de dados na plataforma DIVINE Curadoria Nupcial. Para assuntos de privacidade, o canal de contato é <InstitutionalContact />. Informe que sua mensagem trata de dados pessoais.</p>
+    <p>Esta política explica o tratamento de dados na plataforma DIVINE Curadoria Nupcial, operada por M3Dev Sistemas e Marketing, responsável pelo tratamento de dados descrito nesta política. Para assuntos de privacidade, o canal de contato é <InstitutionalContact />. Informe que sua mensagem trata de dados pessoais.</p>
     <p>A navegação e o cadastro não autorizam qualquer uso dos seus dados. Cada finalidade deve ter fundamento adequado e respeitar suas escolhas. Novas experiências que dependam de autorização serão apresentadas separadamente.</p>
   </> },
   { id: "dados", title: "O que utilizamos e para quê", content: <>

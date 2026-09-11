@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const sections: InstitutionalSection[] = [
   { id: "proposta", title: "O que é a DIVINE", content: <>
-    <p>A DIVINE Curadoria Nupcial aproxima casais e profissionais selecionados do mercado de casamentos, inicialmente no Centro-Oeste Mineiro. O Acervo reúne perfis profissionais; o Passaporte organiza interesses, prioridades e favoritos do casal.</p>
+    <p>A DIVINE Curadoria Nupcial é uma plataforma operada por M3Dev Sistemas e Marketing e aproxima casais e profissionais selecionados do mercado de casamentos, inicialmente no Centro-Oeste Mineiro. O Acervo reúne perfis profissionais; o Passaporte organiza interesses, prioridades e favoritos do casal.</p>
     <p>Estes termos orientam o uso do site por visitantes, casais e fornecedores. A DIVINE oferece descoberta, informação e curadoria editorial. Nesta versão, não recebe pagamentos pelos casamentos, não celebra contratos em nome dos profissionais e não organiza a execução do evento.</p>
   </> },
   { id: "metodo", title: "Curadoria e reconhecimento", content: <>

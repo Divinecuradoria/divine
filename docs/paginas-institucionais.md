@@ -10,7 +10,7 @@
 
 ## Pendências antes de publicar
 
-Esta PR é um rascunho. Confirmar com o responsável a identificação completa de quem opera a plataforma e decide o tratamento: nome ou razão social, CPF/CNPJ conforme cabimento jurídico e endereço profissional/de contato. Não deduzir esses dados a partir de contas pessoais. Inserir a identificação confirmada nas páginas de termos e privacidade antes do merge.
+Nome informado pelo responsável: M3Dev Sistemas e Marketing. Incluído nos termos e na política de privacidade como operador da plataforma e responsável pelo tratamento descrito. Mantido o e-mail divinecuradorianupcial@gmail.com para contato. CNPJ e endereço profissional não foram informados; não foram presumidos ou inventados. Esta PR permanece em rascunho. A identificação complementar e sua adequação jurídica continuam pendentes para revisão antes da publicação.
 
 Submeter a minuta à revisão jurídica, especialmente quanto ao papel efetivamente exercido pela plataforma, responsabilidades de consumo, identificação do controlador e tratamento de interesses que possam revelar saúde. Nenhum texto garante exclusão de responsabilidade.
 

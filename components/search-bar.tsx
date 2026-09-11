@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { ChevronDown, MapPin, Search, Sparkles } from "lucide-react"
 import { getSupabase } from "@/lib/supabase"
 import { INVESTMENT_OPTIONS } from "@/lib/supplier-profile"
-import { availableServices, type SearchSupplier } from "@/lib/acervo-search"
+import { ServiceFilter } from "@/components/service-filter"
+import { availableServices, acervoQuery, type SearchSupplier } from "@/lib/acervo-search"
 
 
 type Opcao = { value: string; label: string }
@@ -76,7 +77,7 @@ function CampoSelecao({
 export default function SearchBar() {
   const router = useRouter()
   const [categoria, setCategoria] = useState("")
-  const [servico, setServico] = useState("")
+  const [servicos, setServicos] = useState<string[]>([])
   const [investimento, setInvestimento] = useState("")
   const [ofertas, setOfertas] = useState<SearchSupplier[]>([])
   const [cidade, setCidade] = useState("")
@@ -107,11 +108,7 @@ export default function SearchBar() {
   }, [])
 
   function buscar() {
-    const p = new URLSearchParams()
-    if (categoria) p.set("categoria", categoria)
-    if (cidade) p.set("cidade", cidade)
-    if (servico) p.set("servico", servico)
-    if (investimento) p.set("investimento", investimento)
+    const p = acervoQuery({ categoria, cidade, servico: "", servicos, investimento })
     const q = p.toString()
     router.push(q ? `/diretorio?${q}` : "/diretorio")
   }
@@ -127,7 +124,7 @@ export default function SearchBar() {
           placeholder="Tipo de fornecedor"
           valor={categoria}
           opcoes={categorias}
-          aoSelecionar={value => { setCategoria(value); setServico("") }}
+          aoSelecionar={value => { setCategoria(value); setServicos([]) }}
         />
         <div className="hidden h-8 w-px bg-linha sm:block" />
         <CampoSelecao
@@ -145,15 +142,14 @@ export default function SearchBar() {
           <Search className="h-4 w-4" />
         </button>
       </div>
-      <details className="mt-3 rounded-2xl border border-linha bg-white/95 px-4 py-3">
-        <summary className="cursor-pointer text-sm text-onix/75">Refinar por serviço e investimento</summary>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <CampoSelecao icone={<Sparkles className="h-4 w-4" />} placeholder="Todos os serviços" valor={servico} opcoes={availableServices(ofertas, categoria).map(service => ({ value: service, label: service }))} aoSelecionar={setServico} />
+      <div className="mt-3 rounded-2xl border border-linha bg-white/95 p-4">
+        <ServiceFilter categoryName={categorias.find(item => item.value === categoria)?.label || ""} selected={servicos} declared={categoria ? availableServices(ofertas, categoria) : []} onChange={setServicos} />
+        <div className="mt-4 border-t border-linha pt-3">
           <CampoSelecao icone={<Sparkles className="h-4 w-4" />} placeholder="Todas as faixas" valor={investimento} opcoes={INVESTMENT_OPTIONS.map(option => ({ value: option.value, label: option.label }))} aoSelecionar={setInvestimento} />
+          <p className="mt-2 text-xs leading-relaxed text-onix/60">Faixas de investimento informadas pelos profissionais. Proposta e disponibilidade sob consulta.</p>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-onix/60">Faixas de investimento informadas pelos profissionais. Proposta e disponibilidade sob consulta.</p>
         <button onClick={buscar} className="mt-3 rounded-lg bg-onix px-4 py-3 text-sm text-alabastro">Ver referências</button>
-      </details>
+      </div>
     </section>
   )
 }

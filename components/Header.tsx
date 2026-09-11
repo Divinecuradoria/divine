@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BriefcaseBusiness, HeartHandshake, Menu, X } from "lucide-react"
+import { BriefcaseBusiness, HeartHandshake, Menu, Sparkles, X } from "lucide-react"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 
 export function Header() {
@@ -71,6 +71,9 @@ export function Header() {
   const links = <>
     <Link className={linkClass} href="/diretorio">O Acervo</Link>
     <Link className={linkClass} href="/revista">O Editorial</Link>
+    <Link className={`${linkClass} flex items-center gap-2 border border-bronze/55 bg-bronze/10 text-onix hover:bg-bronze/15`} href="/#lumi" title="LUMI — nova experiência em desenvolvimento">
+      <Sparkles className="h-4 w-4 shrink-0 text-bronze" aria-hidden="true" /><span>LUMI</span>
+    </Link>
     {!isLoggedIn && <Link className={`${linkClass} flex items-center gap-2`} href="/passaporte" title="Passaporte para noivos e casais">
       <HeartHandshake className="h-4 w-4 shrink-0 text-bronze" aria-hidden="true" /><span>Passaporte</span>
     </Link>}

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { getSupabase } from "@/lib/supabase"
 import SearchBar from "@/components/search-bar"
+import { LumiHomeCard } from "@/components/lumi-home-card"
 import { Header } from "../components/Header"
 
 
@@ -132,6 +133,7 @@ export default function Page() {
           <p className="mt-3 text-sm text-onix/65">O Passaporte é gratuito para casais: reúna suas referências e os dados do casamento.</p>
         </div>
       </section>
+      <LumiHomeCard />
       <SearchBar />
 
       <section id="acervo" className="scroll-mt-28 px-5 py-16 md:px-10 md:py-24">

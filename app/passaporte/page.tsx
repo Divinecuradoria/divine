@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { PassportServices } from "@/components/passport-services"
+import { LumiPreview } from "@/components/lumi-preview"
 import { Header } from "@/components/Header"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { fieldClass } from "@/lib/curadoria"
@@ -198,6 +199,7 @@ function PainelPassaporte() {
         <Link href="/diretorio" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-onix px-5 py-3 text-sm text-alabastro"><CalendarDays className="h-4 w-4" aria-hidden="true" />Explorar o Acervo</Link>
       </section>
       <PassportServices userId={userId} />
+      <LumiPreview />
       <section id="referencias-salvas" aria-labelledby="favoritos-titulo" className="scroll-mt-28 border-t border-linha pt-8"><h2 id="favoritos-titulo" className="font-serif text-3xl">Referências salvas</h2><p className="mt-2 text-sm text-onix/60">Seus fornecedores favoritos organizados por categoria.</p>{!favoritos.length ? <p className="mt-6 text-sm text-onix/60">Você ainda não salvou nenhuma Referência. <Link className="underline" href="/diretorio">Explorar o Acervo</Link></p> : <div className="mt-6 space-y-8">{grupos.map((grupo) => <section key={grupo.nome}><h3 className="mb-3 font-serif text-xl">{grupo.nome}</h3><div className="grid gap-4 sm:grid-cols-2">{grupo.itens.map((item) => <Link key={item.id} href={`/diretorio/${item.slug}`} className="overflow-hidden rounded-xl border border-linha bg-white"><div className="aspect-[4/3] bg-onix">{item.cover_image_url && <img src={item.cover_image_url} alt="" className="h-full w-full object-cover" />}</div><div className="p-3"><p className="font-serif text-lg">{item.business_name}</p>{item.city && <p className="mt-1 flex items-center gap-1 text-xs text-onix/60"><MapPin className="h-3 w-3" />{item.city.name}, {item.city.state}</p>}</div></Link>)}</div></section>)}</div>}</section>
       <details id="configuracoes" className="scroll-mt-28 rounded-xl border border-linha bg-white p-6 sm:p-8">
         <summary className="cursor-pointer rounded py-2 font-serif text-2xl focus-visible:outline-2 focus-visible:outline-bronze focus-visible:outline-offset-4">Configurações do Passaporte</summary>

@@ -235,10 +235,11 @@ export default function Page() {
             <div className="md:col-span-3 md:col-start-7">
               <p className="mb-6 text-[10px] font-light uppercase tracking-[0.25em] text-alabastro/40">Institucional</p>
               <nav className="flex flex-col gap-4">
-                <Link href="/#manifesto" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
+                <Link href="/a-curadoria" className="text-[12px] font-light tracking-wide text-alabastro/70 transition-colors hover:text-bronze">
                   A Curadoria
                 </Link>
-                <a href="mailto:divinecuradorianupcial@gmail.com?subject=Privacidade%20e%20dados%20pessoais" className="text-xs text-alabastro/70 hover:text-bronze">Dúvidas sobre privacidade</a>
+                <Link href="/privacidade" className="text-xs text-alabastro/70 hover:text-bronze">Dúvidas sobre privacidade</Link>
+                <Link href="/duvidas" className="text-xs text-alabastro/70 hover:text-bronze">Dúvidas frequentes</Link>
               </nav>
             </div>
 

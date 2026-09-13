@@ -43,9 +43,9 @@ export default function InvitationGenerator() {
     try {
       const db = getSupabase()
       if (!db) throw new Error("Entre novamente com sua conta de curadoria.")
-      const permission = await db.rpc("divine_is_reviewer")
-      if (permission.error || permission.data !== true) { setAccess("denied"); throw new Error("Entre novamente com sua conta de curadoria.") }
-      await document.fonts.load(`84px ${handwriting.style.fontFamily}`)
+      // O acesso já foi validado ao abrir a página. A geração da arte é local
+      // e não precisa de uma segunda chamada de rede ao Supabase.
+      try { await document.fonts.load(`84px ${handwriting.style.fontFamily}`) } catch { /* a fonte de fallback mantém a arte utilizável */ }
       const seal = new window.Image()
       await new Promise<void>((resolve, reject) => {
         seal.onload = () => resolve()

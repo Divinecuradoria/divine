@@ -88,17 +88,15 @@ serve(async (request) => {
     "<h1 style=\"font-family:Georgia,serif;font-weight:400\">Seu trabalho foi convidado para a próxima etapa.</h1>" +
     "<p>" + greeting + "</p>" +
     "<p>A equipe DIVINE identificou a marca <strong>" + escapeHtml(lead.brand_name) + "</strong> e gostaria de conhecer seu trabalho com mais profundidade.</p>" +
-    "<p>Para continuar:</p><ol>" +
-    "<li>Clique em <strong>Acessar e solicitar meu link</strong>, no botão abaixo. Você será direcionado à tela de entrada do DIVINE.</li>" +
-    "<li>Preencha o campo de e-mail com <strong>" + escapeHtml(lead.email) + "</strong>, o mesmo endereço que recebeu este convite.</li>" +
-    "<li>Não precisa preencher a senha no primeiro acesso. Clique em <strong>Receber link mágico por e-mail</strong>. Esse link permite entrar sem senha.</li>" +
-    "<li>Abra sua caixa de entrada: você receberá <strong>um segundo e-mail</strong>, com o link de confirmação de acesso.</li>" +
-    "<li>Abra o link desse segundo e-mail para acessar e preencher a ficha completa da Curadoria DIVINE.</li></ol>" +
-    "<p style=\"background:#f5f1eb;padding:16px;border-radius:5px\"><strong>O segundo e-mail não apareceu?</strong> Aguarde alguns minutos e confira as pastas <strong>Spam, Lixo eletrônico e Promoções</strong>. Se encontrar a mensagem no spam, marque como <strong>Não é spam</strong>.</p>" +
-    "<p>O link de acesso é pessoal e de uso único. Se já o utilizou ou ele expirou, volte à tela de entrada e solicite um novo. Use sempre o e-mail de acesso mais recente.</p>" +
-    "<p style=\"margin:28px 0\"><a href=\"" + accessUrl + "\" style=\"display:inline-block;background:#171514;color:#fff;padding:13px 22px;text-decoration:none;border-radius:5px\">Acessar e solicitar meu link</a></p>" +
-    "<p>A ficha reúne informações sobre sua atuação, portfólio, assinatura e referências. A análise é privada e a entrada no Acervo depende da decisão editorial.</p>" +
-    "<p><strong>Este convite não representa aprovação automática nem contratação comercial.</strong></p>" +
+    "<h2 style=\"font-family:Georgia,serif;font-weight:400\">Como continuar seu cadastro</h2>" +
+    "<ol style=\"padding-left:24px\">" +
+    "<li style=\"margin-bottom:16px\"><strong>Acesse pelo convite</strong><br />Clique no botão abaixo e informe o mesmo e-mail que recebeu este convite. <strong>Deixe a senha em branco</strong> e clique em <strong>Receber link mágico por e-mail</strong>.</li>" +
+    "<li style=\"margin-bottom:16px\"><strong>Confira o segundo e-mail</strong><br />Você receberá uma nova mensagem com seu link de acesso. Clique nele para entrar em <strong>Meu painel</strong>.</li>" +
+    "<li style=\"margin-bottom:16px\"><strong>Complete seu cadastro</strong><br />No painel, defina sua senha para os próximos acessos, preencha a ficha completa e envie para avaliação. Você poderá acompanhar o andamento por lá.</li>" +
+    "<li style=\"margin-bottom:16px\"><strong>Prepare sua presença no Acervo</strong><br />Após aprovação e publicação pela Curadoria, você poderá configurar seu card, foto de capa, serviços e contatos.</li></ol>" +
+    "<p style=\"background:#f5f1eb;padding:16px;border-radius:5px\"><strong>Não encontrou o e-mail?</strong><br />Aguarde alguns minutos e confira <strong>Spam, Lixo eletrônico e Promoções</strong>. Se a mensagem estiver no spam, marque <strong>Não é spam</strong>. O link de acesso é de uso único: utilize o mais recente. Se já foi utilizado ou expirou, solicite outro na tela de entrada.</p>" +
+    "<p style=\"margin:28px 0\"><a href=\"" + escapeHtml(accessUrl) + "\" style=\"display:inline-block;background:#171514;color:#fff;padding:13px 22px;text-decoration:none;border-radius:5px\">Acessar e continuar meu cadastro</a></p>" +
+    "<p><strong>O convite e o acesso ao painel não representam aprovação automática no Acervo DIVINE.</strong></p>" +
     "<hr style=\"border:0;border-top:1px solid #ddd;margin:28px 0\" />" +
     "<p style=\"font-size:13px;color:#666\">Se você não esperava esta mensagem ou tiver dúvidas, responda a este e-mail.</p></div>"
 

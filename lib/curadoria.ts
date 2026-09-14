@@ -16,7 +16,8 @@ export const STATES: Record<string, string> = {
   observation: "Manter em observação", declined: "Não aprovado neste ciclo",
 }
 export function safeNext(value: string | null) {
-  return value === "/aplicar" || value === "/curadoria" ? value : "/diretorio"
+  if (value === "/aplicar" || value === "/painel/fornecedor") return "/painel/fornecedor"
+  return value === "/curadoria" ? value : "/diretorio"
 }
 export const fieldClass = "mt-2 w-full rounded-lg border border-linha bg-white px-4 py-3 text-base text-onix focus:outline-bronze"
 

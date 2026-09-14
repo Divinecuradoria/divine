@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/Header"
+import { SupplierApplication } from "@/components/SupplierApplication"
 import { getSupabase, ACCESS_UNAVAILABLE } from "@/lib/supabase"
 import { fieldClass } from "@/lib/curadoria"
 import { compactarImagem } from "@/lib/image-compression"
@@ -104,6 +105,19 @@ export default function PainelFornecedor() {
         return
       }
       const currentUser = auth.data.user
+      if (!live) return
+      setUserId(currentUser.id)
+      setEmail(currentUser.email || "")
+      // Navigation preference only. Never used to grant editorial or database access.
+      if (currentUser.user_metadata?.divine_supplier_onboarding !== true) {
+        void db.auth.updateUser({ data: { divine_supplier_onboarding: true } })
+          .then(({ error }) => {
+            if (error && live) setError("Não foi possível memorizar seu acesso ao painel. Você ainda pode completar a ficha e definir sua senha aqui.")
+          })
+          .catch(() => {
+            if (live) setError("Não foi possível memorizar seu acesso ao painel. Tente novamente mais tarde.")
+          })
+      }
       const [supplierResult, categoriesResult, citiesResult] = await Promise.all([
         db.from("suppliers")
         .select("id,business_name,bio,cover_image_url,whatsapp,portfolio,services,instagram_url,facebook_url,tiktok_url,website_url,has_divine_seal,city_id,primary_category_id,service_city_ids,other_service_areas,investment_levels")
@@ -429,21 +443,35 @@ export default function PainelFornecedor() {
     if (primaryCategory === id && !next.includes(id)) setPrimaryCategory("")
   }
 
+  const accountSettings = (
+              <section className="border-t border-linha pt-6">
+                <h2 className="font-serif text-2xl">Senha de acesso</h2>
+                <p className="mt-3 text-sm leading-relaxed">Defina sua senha para os próximos acessos com e-mail e senha. Você também pode continuar usando o link mágico.</p>
+                <p className="mt-3 text-sm text-onix/60">E-mail de acesso</p><p className="mt-1 break-all text-sm">{email}</p>
+                <form onSubmit={changePassword} className="mt-5 space-y-4">
+                  <label className="block text-sm">Nova senha<input type="password" minLength={8} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className={fieldClass} /></label>
+                  <label className="block text-sm">Confirmar nova senha<input type="password" minLength={8} autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} className={fieldClass} /></label>
+                  <button type="submit" disabled={changingPassword || !password || !passwordConfirmation} className="w-full rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50">{changingPassword ? "Atualizando…" : "Salvar senha"}</button>
+                </form>
+              </section>
+  )
+
   return (
     <main className="min-h-screen bg-alabastro px-5 pb-24 pt-32 text-onix">
       <Header />
       <div className="mx-auto max-w-4xl">
         <p className="text-sm uppercase tracking-widest text-bronze">Área do fornecedor</p>
         <h1 className="mt-3 font-serif text-4xl">Meu painel</h1>
-        <p className="mt-4 max-w-2xl leading-relaxed">Aqui você mantém as informações que aparecem no card público da sua Referência DIVINE. A Chancela continua sendo uma decisão exclusiva da Curadoria.</p>
+        <p className="mt-4 max-w-2xl leading-relaxed">{supplier ? "Aqui você mantém as informações da sua Referência DIVINE." : "Complete sua ficha e defina sua senha de acesso. Seu painel está disponível desde o primeiro acesso."} A publicação no Acervo e a Chancela dependem da decisão da Curadoria.</p>
         {message && <p role="status" className="mt-6 rounded-lg border border-green-300 bg-green-50 p-4 text-green-900">{message}</p>}
         {error && <p role="alert" className="mt-6 rounded-lg border border-red-300 p-4 text-red-800">{error}</p>}
         {loading ? <p role="status" className="mt-8">Carregando seu painel…</p> : !supplier ? (
-          <section className="mt-8 border-t border-linha pt-8">
-            <h2 className="font-serif text-2xl">Seu perfil ainda não foi publicado</h2>
-            <p className="mt-3 max-w-xl leading-relaxed">O painel de configuração é liberado quando a candidatura é aprovada e a Referência é publicada no Acervo.</p>
-            <Link href="/aplicar" className="mt-6 inline-block rounded-lg bg-onix px-6 py-3 text-alabastro">Acompanhar candidatura</Link>
-          </section>
+          userId && <div className="mt-8 space-y-10">
+            {accountSettings}
+            <div className="border-t border-linha pt-8">
+              <SupplierApplication embedded />
+            </div>
+          </div>
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
             <form id="supplier-profile" onSubmit={saveProfile} className="space-y-6">
@@ -526,15 +554,7 @@ export default function PainelFornecedor() {
                 <button type="submit" form="supplier-profile" disabled={saving || uploading} className="mt-4 w-full rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50">{saving ? "Salvando…" : "Salvar contato e perfil"}</button>
               </section>
 
-              <section className="border-t border-linha pt-6">
-                <h2 className="font-serif text-2xl">Configuração da conta</h2>
-                <p className="mt-3 text-sm text-onix/60">E-mail de acesso</p><p className="mt-1 break-all text-sm">{email}</p>
-                <form onSubmit={changePassword} className="mt-5 space-y-4">
-                  <label className="block text-sm">Nova senha<input type="password" minLength={8} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className={fieldClass} /></label>
-                  <label className="block text-sm">Confirmar nova senha<input type="password" minLength={8} autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} className={fieldClass} /></label>
-                  <button type="submit" disabled={changingPassword || !password || !passwordConfirmation} className="w-full rounded-lg border border-onix px-4 py-3 text-sm disabled:opacity-50">{changingPassword ? "Atualizando…" : "Atualizar senha"}</button>
-                </form>
-              </section>
+              {accountSettings}
             </aside>
           </div>
         )}

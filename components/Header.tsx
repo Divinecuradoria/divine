@@ -31,22 +31,28 @@ export function Header() {
       if (reviewer.data === true) { setPanelHref("/curadoria"); setPanelLabel("Curadoria") ; return }
       const supplier = await db.from("suppliers").select("id").eq("owner_user_id", user.id).eq("is_active", true).maybeSingle()
       if (supplier.data) { setPanelHref("/painel/fornecedor"); setPanelLabel("Meu painel"); return }
-      // /aplicar é o espaço de candidatura. Isso evita chamar a área de
-      // configuração de um fornecedor que ainda não foi publicado.
-      if (pathname === "/aplicar") { setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return }
+      // This preference changes navigation only; RLS and editorial approval remain authoritative.
+      if (pathname === "/aplicar" || pathname === "/painel/fornecedor" || user.user_metadata?.divine_supplier_onboarding === true) {
+        setPanelHref("/painel/fornecedor"); setPanelLabel("Meu painel"); return
+      }
       const profile = await db.from("profiles").select("role").eq("id", user.id).maybeSingle()
       if (profile.data?.role === "supplier") {
-        setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return
+        setPanelHref("/painel/fornecedor"); setPanelLabel("Meu painel"); return
       }
       const application = await db.from("divine_applications").select("id").eq("user_id", user.id).maybeSingle()
       if (application.data) {
-        setPanelHref("/aplicar"); setPanelLabel("Minha candidatura"); return
+        setPanelHref("/painel/fornecedor"); setPanelLabel("Meu painel"); return
       }
       setPanelHref("/passaporte"); setPanelLabel("Meu Passaporte")
     }
     syncUser().catch(() => setIsLoggedIn(false))
-    const { data } = supabase.auth.onAuthStateChange(() => { syncUser().catch(() => undefined) })
-    return () => data.subscription.unsubscribe()
+    // Defer Supabase queries until the auth callback has released its lock.
+    let authTimer: ReturnType<typeof setTimeout> | undefined
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      clearTimeout(authTimer)
+      authTimer = setTimeout(() => { void syncUser().catch(() => undefined) }, 0)
+    })
+    return () => { clearTimeout(authTimer); data.subscription.unsubscribe() }
   }, [pathname])
 
   async function signOut() {

@@ -89,8 +89,14 @@ serve(async (request) => {
     "<p>" + greeting + "</p>" +
     "<p>A equipe DIVINE identificou a marca <strong>" + escapeHtml(lead.brand_name) + "</strong> e gostaria de conhecer seu trabalho com mais profundidade.</p>" +
     "<p>Para continuar:</p><ol>" +
-    "<li>acesse o botão abaixo;</li><li>entre ou crie seu acesso com e-mail;</li><li>preencha a ficha completa da Curadoria DIVINE.</li></ol>" +
-    "<p style=\"margin:28px 0\"><a href=\"" + accessUrl + "\" style=\"display:inline-block;background:#171514;color:#fff;padding:13px 22px;text-decoration:none;border-radius:5px\">Continuar para a Curadoria</a></p>" +
+    "<li>Clique em <strong>Acessar e solicitar meu link</strong>, no botão abaixo. Você será direcionado à tela de entrada do DIVINE.</li>" +
+    "<li>Preencha o campo de e-mail com <strong>" + escapeHtml(lead.email) + "</strong>, o mesmo endereço que recebeu este convite.</li>" +
+    "<li>Não precisa preencher a senha no primeiro acesso. Clique em <strong>Receber link mágico por e-mail</strong>. Esse link permite entrar sem senha.</li>" +
+    "<li>Abra sua caixa de entrada: você receberá <strong>um segundo e-mail</strong>, com o link de confirmação de acesso.</li>" +
+    "<li>Abra o link desse segundo e-mail para acessar e preencher a ficha completa da Curadoria DIVINE.</li></ol>" +
+    "<p style=\"background:#f5f1eb;padding:16px;border-radius:5px\"><strong>O segundo e-mail não apareceu?</strong> Aguarde alguns minutos e confira as pastas <strong>Spam, Lixo eletrônico e Promoções</strong>. Se encontrar a mensagem no spam, marque como <strong>Não é spam</strong>.</p>" +
+    "<p>O link de acesso é pessoal e de uso único. Se já o utilizou ou ele expirou, volte à tela de entrada e solicite um novo. Use sempre o e-mail de acesso mais recente.</p>" +
+    "<p style=\"margin:28px 0\"><a href=\"" + accessUrl + "\" style=\"display:inline-block;background:#171514;color:#fff;padding:13px 22px;text-decoration:none;border-radius:5px\">Acessar e solicitar meu link</a></p>" +
     "<p>A ficha reúne informações sobre sua atuação, portfólio, assinatura e referências. A análise é privada e a entrada no Acervo depende da decisão editorial.</p>" +
     "<p><strong>Este convite não representa aprovação automática nem contratação comercial.</strong></p>" +
     "<hr style=\"border:0;border-top:1px solid #ddd;margin:28px 0\" />" +

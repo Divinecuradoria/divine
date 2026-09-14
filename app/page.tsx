@@ -8,15 +8,9 @@ import { getSupabase } from "@/lib/supabase"
 import SearchBar from "@/components/search-bar"
 import { LumiHomeCard } from "@/components/lumi-home-card"
 import { Header } from "../components/Header"
+import { LatestReferencesCarousel, type LatestReference } from "@/components/latest-references-carousel"
 
 
-type Referencia = {
-  id: string
-  nome: string
-  categoria: string
-  imagem: string | null
-  slug: string
-}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -27,23 +21,8 @@ const fadeUp = {
   }),
 }
 
-function ReferenciaCard({ item }: { item: Referencia }) {
-  return (
-    <Link href={`/diretorio/${encodeURIComponent(item.slug)}`} className="group block overflow-hidden border border-linha bg-white">
-      <div className="relative aspect-[4/3] overflow-hidden bg-onix">
-        {item.imagem ? <Image src={item.imagem} alt={item.nome} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-[1.03]" /> : <div className="flex h-full items-center justify-center font-serif text-6xl text-alabastro" aria-hidden="true">D</div>}
-      </div>
-      <div className="p-6">
-        <p className="text-xs leading-relaxed text-bronze">{item.categoria}</p>
-        <h3 className="mt-2 font-serif text-3xl text-onix">{item.nome}</h3>
-        <p className="mt-4 text-sm underline underline-offset-4">Conhecer o trabalho</p>
-      </div>
-    </Link>
-  )
-}
-
 export default function Page() {
-  const [referencias, setReferencias] = useState<Referencia[]>([])
+  const [referencias, setReferencias] = useState<LatestReference[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erroAcervo, setErroAcervo] = useState(false)
 
@@ -52,29 +31,9 @@ export default function Page() {
     async function fetchCuradoria() {
       const db = getSupabase()
       if (!db) throw new Error("Acervo indisponível")
-      const result = await db.from("suppliers")
-        .select("id,business_name,cover_image_url,slug")
-        .eq("is_active", true).eq("has_divine_seal", true)
-        .order("created_at", { ascending: false }).limit(6)
+      const result = await db.rpc("divine_latest_references")
       if (result.error) throw result.error
-      if (!result.data?.length) {
-        if (ativo) setReferencias([])
-        return
-      }
-      const [links, categories] = await Promise.all([
-        db.from("supplier_categories").select("supplier_id,category_id").in("supplier_id", result.data.map(item => item.id)),
-        db.from("categories").select("id,name"),
-      ])
-      if (links.error || categories.error) throw new Error("Categorias indisponíveis")
-      const names = new Map((categories.data || []).map(item => [item.id, item.name]))
-      const mapped = result.data.filter(item => !!item.slug).map(item => ({
-        id: item.id,
-        nome: item.business_name,
-        slug: item.slug,
-        imagem: item.cover_image_url,
-        categoria: (links.data || []).filter(link => link.supplier_id === item.id)
-          .map(link => names.get(link.category_id)).filter(Boolean).join(" · ") || "Referência DIVINE",
-      }))
+      const mapped = (result.data || []) as LatestReference[]
       if (ativo) setReferencias(mapped)
     }
     fetchCuradoria().catch(() => { if (ativo) setErroAcervo(true) })
@@ -139,13 +98,13 @@ export default function Page() {
       <section id="acervo" className="scroll-mt-28 px-5 py-16 md:px-10 md:py-24">
         <div className="mx-auto max-w-[1200px]">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-5 border-t border-linha pt-6">
-            <div><p className="text-xs uppercase tracking-widest text-bronze">Profissionais selecionados</p><h2 className="mt-3 font-serif text-4xl md:text-5xl">Conheça o Acervo</h2></div>
+            <div><p className="text-xs uppercase tracking-widest text-bronze">Novas Referências DIVINE</p><h2 className="mt-3 font-serif text-4xl md:text-5xl">Novas assinaturas, novos encontros.</h2></div>
             <Link href="/diretorio" className="py-3 text-sm underline underline-offset-4">Ver todas as Referências</Link>
           </div>
           {carregando ? <p role="status" className="py-8 text-onix/70">Carregando as Referências…</p> : erroAcervo ? (
             <p role="status" className="border border-linha p-6 text-sm leading-relaxed">Não foi possível carregar a seleção agora. <Link href="/diretorio" className="underline underline-offset-4">Acessar o Acervo</Link></p>
           ) : referencias.length ? (
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{referencias.map(item => <ReferenciaCard key={item.id} item={item} />)}</div>
+            <LatestReferencesCarousel items={referencias} />
           ) : <p className="border border-linha p-6 text-base leading-relaxed">A formação inaugural está em composição. As Referências serão apresentadas aqui conforme sua publicação.</p>}
         </div>
       </section>

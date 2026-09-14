@@ -98,7 +98,7 @@ export default function Page() {
       <section id="acervo" className="scroll-mt-28 px-5 py-16 md:px-10 md:py-24">
         <div className="mx-auto max-w-[1200px]">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-5 border-t border-linha pt-6">
-            <div><p className="text-xs uppercase tracking-widest text-bronze">Novas Referências DIVINE</p><h2 className="mt-3 font-serif text-4xl md:text-5xl">Novas assinaturas, novos encontros.</h2></div>
+            <div><p className="text-xs uppercase tracking-widest text-bronze">Novas Referências DIVINE</p><h2 className="mt-3 font-serif text-4xl md:text-5xl">Novos artesãos para o seu grande dia.</h2></div>
             <Link href="/diretorio" className="py-3 text-sm underline underline-offset-4">Ver todas as Referências</Link>
           </div>
           {carregando ? <p role="status" className="py-8 text-onix/70">Carregando as Referências…</p> : erroAcervo ? (
